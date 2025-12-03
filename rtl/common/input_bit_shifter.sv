@@ -10,7 +10,7 @@ module input_bit_shifter #(
     parameter SHIFT_DEPTH = 4,
     parameter SHIFT_WIDTH = 4
 )(
-    input             sys_structs::clk_domain clk_dom_i,
+    input             sys_structs::clk_domain sys_dom_i,
     
     input                                     shift_en_i,
     input                                     clear_en_i,
@@ -20,9 +20,9 @@ module input_bit_shifter #(
 );
 
 //* Clock Configuration
-    wire clk = clk_dom_i.clk;
-    wire clk_en = clk_dom_i.clk_en;
-    wire sync_rst = clk_dom_i.sync_rst;
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
 //* Shifter
     genvar buffer_index;

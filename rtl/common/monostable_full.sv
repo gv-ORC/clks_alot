@@ -9,7 +9,7 @@
 module monostable_full #(
     parameter bit BUFFERED = 1'b0
 )(
-    input  sys_structs::clk_domain clk_dom_i,
+    input  sys_structs::clk_domain sys_dom_i,
 
     input                          monostable_en_i,
 
@@ -22,9 +22,9 @@ module monostable_full #(
 );
 
 //* Clock Configuration
-    wire clk = clk_dom_i.clk;
-    wire clk_en = clk_dom_i.clk_en;
-    wire sync_rst = clk_dom_i.sync_rst;
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
 //* Previous State    
     reg  sense_prev_current;
@@ -39,8 +39,8 @@ module monostable_full #(
 //* Optional Output Buffer
     generate
         if (BUFFERED) begin
-            wire       posedge_check = ~sense_prev_current && sense_i;
-            wire       negedge_check = sense_prev_current && ~sense_i;
+            wire       posedge_check = ~sense_prev_current && sense_i && monostable_en_i;
+            wire       negedge_check = sense_prev_current && ~sense_i && monostable_en_i;
             wire       bothedge_check = posedge_mono_o || negedge_mono_o;
 
             reg  [3:0] output_buffer_current;
@@ -61,8 +61,8 @@ module monostable_full #(
         end
         else begin
             assign prev_o = sense_prev_current;
-            assign posedge_mono_o = ~sense_prev_current && sense_i;
-            assign negedge_mono_o = sense_prev_current && ~sense_i;
+            assign posedge_mono_o = ~sense_prev_current && sense_i && monostable_en_i;
+            assign negedge_mono_o = sense_prev_current && ~sense_i && monostable_en_i;
             assign bothedge_mono_o = posedge_mono_o || negedge_mono_o;
         end
     endgenerate

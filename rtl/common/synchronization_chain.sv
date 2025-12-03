@@ -10,7 +10,7 @@ module synchronization_chain #(
     parameter CHAIN_DEPTH = 4,
     parameter CHAIN_WIDTH = 4
 )(
-    input  sys_structs::clk_domain clk_dom_i, // Ignores `clk_en` and `sync_rst`
+    input  sys_structs::clk_domain sys_dom_i, // Ignores `clk_en` and `sync_rst`
 
     input        [CHAIN_WIDTH-1:0] data_i,
 
@@ -18,9 +18,9 @@ module synchronization_chain #(
 );
 
 //* Clock Configuration
-    wire clk = clk_dom_i.clk;
-    wire clk_en = clk_dom_i.clk_en;
-    wire sync_rst = clk_dom_i.sync_rst;
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
 //* Sync Chain
     genvar buffer_index;
@@ -28,13 +28,9 @@ module synchronization_chain #(
     generate
         for (buffer_index = 0; buffer_index < CHAIN_DEPTH; buffer_index = buffer_index + 1) begin : reg_gen
             reg  [CHAIN_WIDTH-1:0] buffer_current;
-            wire [CHAIN_WIDTH-1:0] buffer_next;
-            if (buffer_index == 0) begin
-                assign buffer_next = data_i;
-            end
-            else begin
-                assign buffer_next = read_vector[buffer_index - 1];
-            end
+            wire [CHAIN_WIDTH-1:0] buffer_next = (buffer_index == 0)
+                                               ? data_i
+                                               : read_vector[buffer_index-1];
             always_ff @(posedge clk) begin
                 buffer_current <= buffer_next;
             end

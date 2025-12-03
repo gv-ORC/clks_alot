@@ -1,12 +1,58 @@
 /**
- * Package: io_clk_p
+ * Package: clks_alot_p
  * 
  * Package for the sir_clks_alot
  * 
- * Giovanni Viscardi 7/Nov/2025
+ * Giovanni Viscardi 2/Dec/2025
 **/
 
-packageio_clk_p;
+package clks_alot_p;
+
+    parameter COUNTER_WIDTH = 32;
+
+
+    typedef struct packed {
+        logic                     recovery_over_violation;
+        logic                     recovery_under_violation;
+        logic                     minimim_frequency_violation;
+        logic                     maximim_frequency_violation;
+        logic                     pause_active;
+        logic [COUNTER_WIDTH-1:0] pause_duration; // In IO Cycles
+    } clock_status_s;
+
+    typedef struct packed {
+        logic rising_edge;
+        logic steady_high;
+        logic falling_edge;
+        logic steady_low;
+    } clock_events_s;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
 
     parameter SYS_CLOCK_MULTIPLE = 64;
     parameter CLOCK_EDGE_UNCERTANTY = 1;

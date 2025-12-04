@@ -6,8 +6,7 @@ Desired Features:
     Clock Speed Recovery (Updates counter limit between edges)
     
 Desiered Inputs:
-    -> Manual Recovery Enable
-    -> Automatic Recovery Enabled
+    -> Recovery Enable
     -> Generation Enable
     - -> Starting Polarity
     - -> Generate Pause Enable (Preserves clock lock and phase, just negates the output)

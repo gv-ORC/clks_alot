@@ -50,7 +50,9 @@ module clock_state (
     end
 
     assign unpausable_state_o.pause_active = 1'b0;
+    assign unpausable_state_o.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
     assign pausable_state_o.pause_active = pause_active_current;
+    assign pausable_state_o.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
 
 // Output Buffer
     reg  paused_clock_current;
@@ -77,6 +79,7 @@ module clock_state (
         .quarter_rate_elapsed(quarter_rate_elapsed_i),
         .clk_events_o        (unpausable_state_o.events)
     );
+    assign unpausable_state_o.locked = clock_active_i;
 
     wire pausable_active = clock_active_i && ~pause_active_current;
     event_generation pausable_event_generation (
@@ -87,5 +90,6 @@ module clock_state (
         .quarter_rate_elapsed(quarter_rate_elapsed_i),
         .clk_events_o        (pausable_state_o.events)
     );
+    assign pausable_state_o.locked = clock_active_i;
 
 endmodule : clock_state

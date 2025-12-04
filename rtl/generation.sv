@@ -6,6 +6,7 @@ module generation (
     input                                     starting_polarity_i,
 
     input                                     generation_en_i, // When this goes low, clock will stop on the next starting_polarity
+    output                                    busy_o,
     //! NOTE: expected_half_rate should be AT LEAST `preemptive_delay + sync_cycle_offset + 1` - Double check this
     input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_half_rate_minus_one_i,
     input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
@@ -16,13 +17,12 @@ module generation (
     // Pauses enable & disable when clock polarity matches
     input                                     pause_en_i,
     input                                     pause_polarity_i,
-    output                                    _pause_violation_o,
-    output                                    _pause_violation_o,
+    output                                    pause_start_violation_o,
+    output                                    pause_stop_violation_o,
 
     //? Recovery - To accomodate for skew/drift
     input  [(clks_alot_p::COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
-    input                                     negedge_sync_pulse_i,
-    input                                     posedge_sync_pulse_i,
+    input         clks_alot_p::clock_states_s actual_clk_state_i,
 
     //? Generated Clocks
     output        clks_alot_p::clock_states_s expected_clk_state_o,
@@ -30,22 +30,15 @@ module generation (
 );
 
 /*
-This means the minimum half-rate would be (preemptive_delay[5] + sync_cycle_offset_i[4] + 1) = 10... 
-With 10 cycles being minimal...
+Based on estimates so far, minimum half-rate would be (preemptive_delay[5] + sync_cycle_offset_i[4] + 1) = 10... 
+Resulting in:
 > core clk - Max IO clk
    100 Mhz - 5 Mhz
    150 Mhz - 7.5 Mhz
    200 Mhz - 10 Mhz
-   250 Mhz - 12.5 Mhz 
+   250 Mhz - 12.5 Mhz
 
-TODO:
-// 1. Sync Pulse Violation
-// 2. Expected Pause Control
-// 3. Preemptive Pause Control
-// 4. Post-Enable Cleanup
-// 4. Should we skew on re-sync? - No, cause the counter will automatically offset accordingly
-// 5. Clock Event Generation
-6. Pause Exception/Violation Generation
+TODO: Add more violation checks
 */
 
 // Clock Configuration
@@ -79,7 +72,7 @@ TODO:
 // Cycle Counter
     reg    [(clks_alot_p::COUNTER_WIDTH)-1:0] cycle_count_current;
 
-    wire                                      recovery_check = negedge_sync_pulse_i || posedge_sync_pulse_i;
+    wire                                      recovery_check = actual_clk_state_i.events.falling_edge || actual_clk_state_i.events.rising_edge;
     wire                                      expected_half_rate_elapsed = cycle_count_current == expected_half_rate_minus_one_i;
     wire                                      expected_quarter_rate_elapsed = cycle_count_current == expected_quarter_rate_minus_one_i;
     wire                                      preemptive_half_rate_elapsed = cycle_count_current == preemptive_half_rate_minus_one_i;
@@ -110,11 +103,10 @@ TODO:
 // Clock Control, Expected - Inherent 1 Cycle Delay to enforce phase-accurate pausing
     wire set_expected_clock_low = (set_polarity_i && ~starting_polarity_i)
                                || (busy_delay_current && ~starting_polarity_i)
-                               || negedge_sync_pulse_i;
+                               || actual_clk_state_i.events.falling_edge;
     wire set_expected_clock_high = (set_polarity_i && ~starting_polarity_i)
                                 || (busy_delay_current && starting_polarity_i)
-                                || posedge_sync_pulse_i;
-    wire expected_pause_active;
+                                || actual_clk_state_i.events.rising_edge;
 
     clock_state expected_clock_state (
         .sys_dom_i             (sys_dom_i),
@@ -126,8 +118,7 @@ TODO:
         .quarter_rate_elapsed_i(expected_quarter_rate_elapsed),
         .pause_en_i            (pause_en_i),
         .pause_polarity_i      (pause_polarity_i),
-        .pause_active_o        (expected_pause_active),
-        .state_o               (expected_clk_o)
+        .state_o               (expected_clk_state_o)
     );
 
     wire expected_pause_active_pulse;
@@ -137,23 +128,22 @@ TODO:
     ) expected_pause_monostable_gen (
         .clk_dom_i      (sys_dom_i),
         .monostable_en_i(1'b1),
-        .sense_i        (expected_pause_active),
+        .sense_i        (expected_clk_state_o.pause_active),
         .prev_o         (), // Not Used
         .posedge_mono_o (expected_pause_active_pulse),
         .negedge_mono_o (), // Not Used
         .bothedge_mono_o()  // Not Used
     );
 
-
 // Clock Control, Preemptive - Inherent 1 Cycle Delay to enforce phase-accurate pausing
     wire set_preemptive_clock_low = (set_polarity_i && ~starting_polarity_i)
                                  || (busy_delay_current && ~starting_polarity_i)
-                                 || negedge_sync_pulse_i
-                                 || (expected_pause_active && ~pause_polarity_i);
+                                 || actual_clk_state_i.events.falling_edge
+                                 || (expected_clk_state_o.pause_active && ~pause_polarity_i);
     wire set_preemptive_clock_high = (set_polarity_i && starting_polarity_i)
                                   || (busy_delay_current && starting_polarity_i)
-                                  || posedge_sync_pulse_i
-                                  || (expected_pause_active && pause_polarity_i);
+                                  || actual_clk_state_i.events.rising_edge
+                                  || (expected_clk_state_o.pause_active && pause_polarity_i);
 
     clock_state preemptive_clock_state (
         .sys_dom_i             (sys_dom_i),
@@ -165,8 +155,11 @@ TODO:
         .quarter_rate_elapsed_i(preemptive_quarter_rate_elapsed),
         .pause_en_i            (pause_en_i),
         .pause_polarity_i      (pause_polarity_i),
-        .pause_active_o        (), // Not Used
-        .state_o               (preemptive_clk_o)
+        .state_o               (preemptive_clk_state_o)
     );
+
+// Pause Violation Check
+    assign pause_start_violation_o = pause_en_i && expected_clk_state_o.pause_active && ~preemptive_clk_state_o.pause_active;
+    assign pause_stop_violation_o = ~pause_en_i && ~expected_clk_state_o.pause_active && preemptive_clk_state_o.pause_active;
 
 endmodule : generation

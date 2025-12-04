@@ -10,15 +10,17 @@ package clks_alot_p;
 
     parameter COUNTER_WIDTH = 32;
 
+    typedef struct packed {
+        logic recovery_over_violation;
+        logic recovery_under_violation;
+        logic minimim_frequency_violation;
+        logic maximim_frequency_violation;
+    } clock_status_s;
 
     typedef struct packed {
-        logic                     recovery_over_violation;
-        logic                     recovery_under_violation;
-        logic                     minimim_frequency_violation;
-        logic                     maximim_frequency_violation;
-        logic                     pause_active;
-        logic [COUNTER_WIDTH-1:0] pause_duration; // In IO Cycles
-    } clock_status_s;
+        logic pos;
+        logic neg;
+    } recovery_pins_s;
 
     typedef struct packed {
         logic rising_edge;
@@ -28,9 +30,11 @@ package clks_alot_p;
     } clock_events_s;
 
     typedef struct packed {
-        logic          clk;
-        logic          pause_active;
-        clock_events_s events;
+        logic                     clk;
+        logic                     pause_active;
+        logic [COUNTER_WIDTH-1:0] pause_duration; // In IO Cycles
+        logic                     locked;
+        clock_events_s            events;
     } clock_state_s;
 
 

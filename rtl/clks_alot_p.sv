@@ -16,6 +16,21 @@ package clks_alot_p;
         // 0: Use High and Low rates respectively
         // 1: Only use High rates respectively
         logic even_50_50_en;
+        /*
+        | = Desired Rate
+        { = Minimum Violation Rate (Lock-In effected)
+        } = Maximum Violation Rate (Lock-In effected)
+        < = Minimum Band Rate
+        > = Maximum Band Rate
+        - = Allowed Rate
+        x = Ignored Rate
+        v = Violation Triggered Rate
+        
+        Locking-in:
+        xxx{vvv<---|--->vvv}xxx
+        xxx{vvvv<--|-->vvvv}xxx
+        xxx{vvvvv<-|->vvvvv}xxx
+        */
         logic lockin_enabled;
         // Used when recovering a clock from a data signal
         logic cycle_skip_en;

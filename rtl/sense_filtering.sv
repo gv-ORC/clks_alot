@@ -1,17 +1,3 @@
-/*
-| = Desired Rate
-{ = Minimum Violation Rate (Lock-In effected)
-} = Maximum Violation Rate (Lock-In effected)
-< = Minimum Band Rate
-> = Maximum Band Rate
-- = Allowed Rate
-x = Ignored Rate
-v = Violation Triggered Rate
-
-xxx{vvv<---|--->vvv}xxx
-xxx{vvvv<--|-->vvvv}xxx
-xxx{vvvvv<-|->vvvvv}xxx
-*/
 module sense_filtering (
     input     clks_alot_p::half_rate_limits_s half_rate_limits_i,
 

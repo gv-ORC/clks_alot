@@ -1,17 +1,3 @@
-/*
-| = Desired Rate
-{ = Minimum Violation Rate (Lock-In effected)
-} = Maximum Violation Rate (Lock-In effected)
-< = Minimum Band Rate
-> = Maximum Band Rate
-- = Allowed Rate
-x = Ignored Rate
-v = Violation Triggered Rate
-
-xxx{vvv<---|--->vvv}xxx
-xxx{vvvv<--|-->vvvv}xxx
-xxx{vvvvv<-|->vvvvv}xxx
-*/
 module lockin (
     input                 common_p::clk_dom_s sys_dom_i,
     

@@ -26,7 +26,7 @@ module half_rate_recovery (
 // Lock-In - Take the configured Min/Max half-rates and slowly narrow them down to what the active clock is currently at
     reg  [(clks_alot_p::COUNTER_WIDTH-1):0] rate_counter_current;
     wire                                    filtered_event;
-    wire    clks_alot_p::half_rate_limits_s filtered_limits,
+    wire    clks_alot_p::half_rate_limits_s filtered_limits;
 
     //TODO: Complete this module
     lockin lockin (

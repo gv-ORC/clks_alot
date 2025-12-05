@@ -1,5 +1,5 @@
-module clock_state (
-    input            common_p::clk_dom sys_dom_i,
+module clock_generation (
+    input            common_p::clk_dom_s sys_dom_i,
 
     input                              set_clock_low_i,
     input                              set_clock_high_i,
@@ -26,7 +26,7 @@ module clock_state (
     wire toggle_clock = clock_active_i && half_rate_elapsed_i;
 
     flip_flop clock_state (
-        .clk_dom_i(sys_dom_i),
+        .clk_dom_s_i(sys_dom_i),
         .clear_en (set_clock_low_i),
         .set_en   (set_clock_high_i),
         .toggle_en(toggle_clock),
@@ -49,10 +49,10 @@ module clock_state (
         end
     end
 
-    assign unpausable_state_o.pause_active = 1'b0;
-    assign unpausable_state_o.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
-    assign pausable_state_o.pause_active = pause_active_current;
-    assign pausable_state_o.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
+    assign unpausable_state_o.status.pause_active = 1'b0;
+    assign unpausable_state_o.status.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
+    assign pausable_state_o.status.pause_active = pause_active_current;
+    assign pausable_state_o.status.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
 
 // Output Buffer
     reg  paused_clock_current;
@@ -90,6 +90,7 @@ module clock_state (
         .quarter_rate_elapsed(quarter_rate_elapsed_i),
         .clk_events_o        (pausable_state_o.events)
     );
-    assign pausable_state_o.locked = clock_active_i;
+    //TODO: Update this once lock-in is enabled
+    assign pausable_state_o.status.locked = clock_active_i;
 
-endmodule : clock_state
+endmodule : clock_generation

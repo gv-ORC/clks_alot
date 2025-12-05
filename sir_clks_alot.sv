@@ -1,5 +1,5 @@
 module sir_clks_alot (
-    // input  common_p::clk_dom sys_dom_i, //! Use the init/config handshake
+    // input  common_p::clk_dom_s sys_dom_i, //! Use the init/config handshake
 
 
 

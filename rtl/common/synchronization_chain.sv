@@ -10,7 +10,7 @@ module synchronization_chain #(
     parameter CHAIN_DEPTH = 4,
     parameter CHAIN_WIDTH = 4
 )(
-    input  sys_structs::clk_domain clk_dom_i, // Ignores `clk_en` and `sync_rst`
+    input  sys_structs::clk_dom_sain clk_dom_s_i, // Ignores `clk_en` and `sync_rst`
 
     input        [CHAIN_WIDTH-1:0] data_i,
 
@@ -18,9 +18,9 @@ module synchronization_chain #(
 );
 
 // Clock Configuration
-    wire clk = clk_dom_i.clk;
-    wire clk_en = clk_dom_i.clk_en;
-    wire sync_rst = clk_dom_i.sync_rst;
+    wire clk = clk_dom_s_i.clk;
+    wire clk_en = clk_dom_s_i.clk_en;
+    wire sync_rst = clk_dom_s_i.sync_rst;
 
 // Sync Chain
     genvar buffer_index;

@@ -1,5 +1,5 @@
 module recovery (
-    input                   common_p::clk_dom sys_dom_i,
+    input                   common_p::clk_dom_s sys_dom_i,
 
     input                                     recovery_en_i,
     // Used for differential and quad-state signals to decide which input is used to determine the primary clock edges
@@ -8,13 +8,11 @@ module recovery (
     // Use for single-ended signals to decide which input is used as the clock signal
     // 0: io_clk_i.neg used
     // 1: io_clk_i.pos used
-    input                                     polarity_select_i,
-    input        clks_alot_p::recovery_mode_e recovery_mode_i,
+    input                                     source_select_i,
+    input        clks_alot_p::recovery_conf_s recovery_config_i,
     output                                    busy_o,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] minimum_half_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] maximum_half_rate_minus_one_i,
 
-    input                                     pause_en_i,
+
     input                                     pause_polarity_i,
     input  [(clks_alot_p::COUNTER_WIDTH)-1:0] minimum_pause_cycles_i,
 
@@ -63,14 +61,16 @@ After recovery is locked-in, update half-rate halfway through the next cycle
     assign busy_o = active_current || busy_delay_current;
 
 // Event Recovery
+    wire                            primary_clk;
     clks_alot_p::recovered_events_s recovered_events;
 
     event_recovery event_recovery (
         .sys_dom_i         (sys_dom_i),
         .recovery_en_i     (recovery_en_i),
-        .polarity_select_i (polarity_select_i),
-        .recovery_mode_i   (recovery_mode_i),
+        .source_select_i   (source_select_i),
+        .recovery_mode_i   (recovery_config_i.mode),
         .io_clk_i          (io_clk_i),
+        .primary_clk_o     (primary_clk),
         .recovered_events_o(recovered_events),
     );
 
@@ -84,11 +84,8 @@ After recovery is locked-in, update half-rate halfway through the next cycle
 
     ):
 
-// Pause Detection
-
 // Drift Averaging - Accounts for holding steady during external pause events (if different drift directions, throw violation)
     // This could be used to predict the next nudge
 
-// High/Low Half-Rate Averaging - Allows for PWM approximation - Allow Polarity Selection for easier external math
 
 endmodule : recovery

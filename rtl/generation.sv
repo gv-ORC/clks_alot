@@ -1,5 +1,5 @@
 module generation (
-    input                   common_p::clk_dom sys_dom_i,
+    input                   common_p::clk_dom_s sys_dom_i,
 
     //? Generation
     input                                     set_polarity_i,
@@ -14,19 +14,19 @@ module generation (
 
     //? Recovery - To accomodate for skew/drift
     input  [(clks_alot_p::COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
-    input         clks_alot_p::clock_states_s actual_clk_state_i, // for "Clock came too Early"
+    input          clks_alot_p::clock_state_s actual_clk_state_i, // for "Clock came too Early"
 
     //? Unpausable Output
-    output        clks_alot_p::clock_states_s unpausable_expected_clk_state_o,
-    output        clks_alot_p::clock_states_s unpausable_preemptive_clk_state_o,
+    output         clks_alot_p::clock_state_s unpausable_expected_clk_state_o,
+    output         clks_alot_p::clock_state_s unpausable_preemptive_clk_state_o,
 
     //? Pausable Output
     // Pauses maintain clock phasing when enabling and disabling
     // Pauses enable & disable when clock polarity matches
     input                                     pause_en_i,
     input                                     pause_polarity_i,
-    output        clks_alot_p::clock_states_s pausable_expected_clk_state_o,
-    output        clks_alot_p::clock_states_s pausable_preemptive_clk_state_o,
+    output         clks_alot_p::clock_state_s pausable_expected_clk_state_o,
+    output         clks_alot_p::clock_state_s pausable_preemptive_clk_state_o,
     output                                    pause_start_violation_o,
     output                                    pause_stop_violation_o
 );
@@ -152,7 +152,7 @@ Use larger counters... allow the clocks to overlap
     monostable_full #(
         .BUFFERED(1'b0)
     ) expected_pause_monostable_gen (
-        .clk_dom_i      (sys_dom_i),
+        .clk_dom_s_i      (sys_dom_i),
         .monostable_en_i(1'b1),
         .sense_i        (expected_clk_state_o.pause_active),
         .prev_o         (), // Not Used

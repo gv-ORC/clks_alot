@@ -1,5 +1,5 @@
 module event_generation (
-    input                   common_p::clk_dom sys_dom_i,
+    input                   common_p::clk_dom_s sys_dom_i,
 
     input                                     clock_active_i,
 
@@ -14,7 +14,7 @@ module event_generation (
     monostable_full #(
         .BUFFERED(1'b1)
     ) rising_edge (
-        .clk_dom_i      (sys_dom_i),
+        .clk_dom_s_i      (sys_dom_i),
         .monostable_en_i(clock_active_i),
         .sense_i        (rising_edge_check),
         .prev_o         (), // Not Used
@@ -27,7 +27,7 @@ module event_generation (
     monostable_full #(
         .BUFFERED(1'b1)
     ) stable_high (
-        .clk_dom_i      (sys_dom_i),
+        .clk_dom_s_i      (sys_dom_i),
         .monostable_en_i(clock_active_i),
         .sense_i        (stable_high_check),
         .prev_o         (), // Not Used
@@ -40,7 +40,7 @@ module event_generation (
     monostable_full #(
         .BUFFERED(1'b1)
     ) falling_edge (
-        .clk_dom_i      (sys_dom_i),
+        .clk_dom_s_i      (sys_dom_i),
         .monostable_en_i(clock_active_i),
         .sense_i        (falling_edge_check),
         .prev_o         (), // Not Used
@@ -53,7 +53,7 @@ module event_generation (
     monostable_full #(
         .BUFFERED(1'b1)
     ) stable_low (
-        .clk_dom_i      (sys_dom_i),
+        .clk_dom_s_i      (sys_dom_i),
         .monostable_en_i(clock_active_i),
         .sense_i        (stable_low_check),
         .prev_o         (), // Not Used

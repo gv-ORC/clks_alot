@@ -9,7 +9,8 @@
 package clks_alot_p;
 
 // Common Parameters
-    parameter COUNTER_WIDTH = 32;
+    parameter RATE_COUNTER_WIDTH = 32;
+    parameter DRIFT_COUNTER_WIDTH = 8;
 
 // Recovery
     typedef struct packed {

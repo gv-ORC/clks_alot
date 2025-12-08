@@ -1,5 +1,5 @@
 module generation (
-    input                   common_p::clk_dom_s sys_dom_i,
+    input                 common_p::clk_dom_s sys_dom_i,
 
     //? Generation
     input                                     set_polarity_i,

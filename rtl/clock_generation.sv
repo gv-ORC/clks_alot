@@ -1,5 +1,5 @@
 module clock_generation (
-    input            common_p::clk_dom_s sys_dom_i,
+    input          common_p::clk_dom_s sys_dom_i,
 
     input                              set_clock_low_i,
     input                              set_clock_high_i,

@@ -46,7 +46,7 @@ module event_recovery (
     ) secondary_edge_detection (
         .clk_dom_i      (sys_dom_i),
         .monostable_en_i(recovery_en_i),
-        .sense_i        (recovery_drivers.primary),
+        .sense_i        (recovery_drivers.secondary),
         .prev_o         (), // Not Used
         .posedge_mono_o (driver_events.secondary_rising_edge),
         .negedge_mono_o (driver_events.secondary_falling_edge),

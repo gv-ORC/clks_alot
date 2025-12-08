@@ -1,5 +1,5 @@
 module recovery (
-    input                   common_p::clk_dom_s sys_dom_i,
+    input                 common_p::clk_dom_s sys_dom_i,
 
     input                                     recovery_en_i,
     // Used for differential and quad-state signals to decide which input is used to determine the primary clock edges

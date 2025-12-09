@@ -12,7 +12,7 @@ package clks_alot_p;
     parameter RATE_COUNTER_WIDTH = 32;
     parameter DRIFT_COUNTER_WIDTH = 8;
 
-// Recovery
+// Configuration Structs
     typedef struct packed {
         // 0: Use High and Low rates respectively
         // 1: Only use High rates respectively
@@ -77,7 +77,7 @@ package clks_alot_p;
                          > Basic Monostable - (sense_i = io_clk_i[0]) & (sense_i = io_clk_i[1]) When opposing edges both fire, mismatches use dedicated events
                          > FORCES `even_50_50_en`
     */
-    typedef enum { 
+    typedef enum logic { 
         SINGLE_CONTINUOUS,
         SINGLE_PAUSABLE,
         DIF_CONTINUOUS,
@@ -91,6 +91,7 @@ package clks_alot_p;
         duty_cycle_conf_s duty_cycle;
     } recovery_conf_s;
 
+// Operational Structs
     typedef struct packed {
         logic pos;
         logic neg;
@@ -113,8 +114,6 @@ package clks_alot_p;
     typedef struct packed {
         logic rising_edge;
         logic falling_edge;
-        // logic dual_high_edge; //! These are only used when recovering data, not clocks
-        // logic dual_low_edge; //! These are only used when recovering data, not clocks
         logic any_valid_edge;
         logic diff_rising_edge_violation;
         logic diff_falling_edge_violation;
@@ -127,14 +126,17 @@ package clks_alot_p;
         logic                     under_frequency_violation;
     } recovered_half_rates_s;
 
-// Common
+    typedef enum logic {
+        PIN_CAME_LATE,
+        PIN_CAME_EARLY
+    } drift_direction_e;
+
     typedef struct packed {
         logic                     pause_active;
         logic [COUNTER_WIDTH-1:0] pause_duration; // In recovered IO Cycles
         logic                     locked;
     } status_s;
 
-// Generation
     typedef struct packed {
         logic rising_edge;
         logic steady_high;

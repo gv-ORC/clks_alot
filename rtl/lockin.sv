@@ -24,7 +24,6 @@ module lockin (
         xxx{vvvvv<-|->vvvvv...vvvvv<-|->vvvvv}xxx
     For Pausable Recovery: Skew must be set at an appropriate level for the expected drift during the longest sequence of like bits.
 
-
 */
 
 // Initialization Check
@@ -41,7 +40,6 @@ module lockin (
         .bothedge_mono_o()  // Not Used
     );
 
-//TODO: Have a way to validate the lockin that is configurable - 4x or 8x matching sequences.
 /*
 Have a counter that counts how many edges were within skew range.
 

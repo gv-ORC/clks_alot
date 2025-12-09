@@ -32,5 +32,4 @@
 
     Take the output of a counter during the proper events, if the value is roughly half the amount of the current value, accept 
 
-
 */

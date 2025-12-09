@@ -7,7 +7,28 @@
  *
 **/
 module drift_tracking (
+    input                       common_p::clk_dom_s sys_dom_i,
 
+    input                                           accumulator_en_i,
+    input                                           clear_state_i,
+
+    input                                           drift_detected_i,
+    output           clks_alot_p::drift_direction_e drift_direction_i,
+
+    input  [(clks_alot_p::DRIFT_COUNTER_WIDTH)-1:0] max_drift_i,
+    output                                          drift_acc_overflow_o,
+    output                                          inverse_drift_violation_o,
+
+    input  [(clks_alot_p::DRIFT_COUNTER_WIDTH)-1:0] minimum_drift_lockout_duration_i,
+    input                                           any_valid_edge_i,
+
+    output                                          expected_drift_req_o,
+    input                                           expected_drift_res_i,
+    output           clks_alot_p::drift_direction_e expected_drift_direction_o,
+
+    output                                          preemptive_drift_req_o,
+    input                                           preemptive_drift_res_i,
+    output           clks_alot_p::drift_direction_e preemptive_drift_direction_o
 );
 
 /*
@@ -21,19 +42,21 @@ module drift_tracking (
 
 
 // Drift Accumulator - Drift the preemptive clock to match any difting of the expected clock
-drift_accumulator drift_accumulator (
-    .sys_dom_i                (),
-    .accumulator_en_i         (),
-    .pos_drift_detected_i     (),
-    .neg_drift_detected_i     (),
-    .max_drift_i              (),
-    .drift_acc_overflow_o     (),
-    .inverse_drift_violation_o(),
-    .any_valid_edge_i         (),
-    .pos_drift_ready_o        (),
-    .neg_drift_ready_o        (),
-    .drift_accepted_i         ()
-);
+    drift_accumulator drift_accumulator (
+        .sys_dom_i                       (),
+        .accumulator_en_i                (),
+        .clear_state_i                   (),
+        .drift_detected_i                (),
+        .drift_direction_i               (),
+        .max_drift_i                     (),
+        .drift_acc_overflow_o            (),
+        .inverse_drift_violation_o       (),
+        .minimum_drift_lockout_duration_i(),
+        .any_valid_edge_i                (),
+        .drift_req_o                     (),
+        .drift_res_i                     (),
+        .drift_direction_o               ()
+    );
 
 
 

@@ -58,9 +58,9 @@ module sir_clks_alot (
         .recovered_events_o(recovered_events),
     );
     
-// Rate Control (Lockin, Filtering, and Generation Configuration)
+// Rate Control (Lockin, Filtering, Drift, and Generation Configuration)
 
-// Counters
+// Clocks && Counters (Needs to provide drift and rate feedback)
 
 // Event Generation
 

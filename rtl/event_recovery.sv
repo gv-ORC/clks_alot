@@ -53,7 +53,7 @@ module event_recovery (
         .bothedge_mono_o(driver_events.secondary_either_edge)
     );
 
-    event_detection event_detection (
+    event_selection event_selection (
         .sys_dom_i         (sys_dom_i),
         .recovery_en_i     (recovery_en_i),
         .recovery_mode_i   (recovery_mode_i),

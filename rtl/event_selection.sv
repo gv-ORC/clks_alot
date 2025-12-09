@@ -1,4 +1,4 @@
-module event_detection (
+module event_selection (
     input                common_p::clk_dom_s sys_dom_i,
 
     input                                  recovery_en_i,
@@ -78,4 +78,4 @@ always_comb begin : recovery_drivers_mux
     endcase
 end
 
-endmodule : event_detection
+endmodule : event_selection

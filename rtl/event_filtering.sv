@@ -8,7 +8,7 @@ module event_filtering (
     input                                     polarity_i,
     input                                     primary_clk_i,
 
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] current_rate_counter_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] current_rate_counter_i,
     input                                     event_i,
 
     output                                    ignore_filtered_event_o,

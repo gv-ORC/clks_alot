@@ -13,7 +13,8 @@ module drift_tracking (
     input                                           clear_state_i,
 
     input                                           drift_detected_i,
-    output           clks_alot_p::drift_direction_e drift_direction_i,
+    input           clks_alot_p::half_rate_limits_s drift_limits_i, // TODO: update with `fixed_drift_direction_en`
+    input            clks_alot_p::drift_direction_e drift_direction_i,
 
     input  [(clks_alot_p::DRIFT_COUNTER_WIDTH)-1:0] max_drift_i,
     output                                          drift_acc_overflow_o,

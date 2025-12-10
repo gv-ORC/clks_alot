@@ -7,13 +7,13 @@ module generation (
 
     input                                     generation_en_i, // When this goes low, clock will stop on the next starting_polarity
     output                                    busy_o,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
 
     //? Recovery - To accomodate for skew/drift
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
     input          clks_alot_p::clock_state_s actual_clk_state_i, // for "Clock came too Early"
 
     //? Unpausable Output

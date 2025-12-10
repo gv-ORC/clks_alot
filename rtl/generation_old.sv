@@ -7,13 +7,13 @@ module generation (
 
     input                                     generation_en_i, // When this goes low, clock will stop on the next starting_polarity
     output                                    busy_o,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
 
     //? Recovery - To accomodate for skew/drift
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
     input          clks_alot_p::clock_state_s actual_clk_state_i, // for "Clock came too Early"
 
     //? Unpausable Output
@@ -80,7 +80,7 @@ Use larger counters... allow the clocks to overlap
     assign busy_o = active_current || busy_delay_current;
 
 // Clock Event Detection and Correction
-    reg  [(clks_alot_p::COUNTER_WIDTH)-1:0] cycle_count_current;
+    reg  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] cycle_count_current;
 
     reg  half_rate_delay_current;
     wire expected_half_rate_elapsed = cycle_count_current == expected_half_rate_minus_two_i;
@@ -103,17 +103,17 @@ Use larger counters... allow the clocks to overlap
     wire stall_check = half_rate_delay_current ^ nudge_check;
 
 // Cycle Counter
-    logic  [(clks_alot_p::COUNTER_WIDTH)-1:0] cycle_count_next;
+    logic  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] cycle_count_next;
     wire                                [1:0] cycle_count_next_condition;
     assign                                    cycle_count_next_condition[0] = nudge_check;
     assign                                    cycle_count_next_condition[1] = half_rate_delay_current || sync_rst || busy_delay_current;
     always_comb begin : cycle_count_nextMux
         case (cycle_count_next_condition)
-            2'b00  : cycle_count_next = cycle_count_current + clks_alot_p::COUNTER_WIDTH'(1);
+            2'b00  : cycle_count_next = cycle_count_current + clks_alot_p::RATE_COUNTER_WIDTH'(1);
             2'b01  : cycle_count_next = sync_cycle_offset_i;
-            2'b10  : cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
-            2'b11  : cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
-            default: cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
+            2'b10  : cycle_count_next = clks_alot_p::RATE_COUNTER_WIDTH'(0);
+            2'b11  : cycle_count_next = clks_alot_p::RATE_COUNTER_WIDTH'(0);
+            default: cycle_count_next = clks_alot_p::RATE_COUNTER_WIDTH'(0);
         endcase
     end
     wire cycle_count_trigger = sync_rst

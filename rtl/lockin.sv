@@ -22,7 +22,8 @@ module lockin (
     output                                         clear_rate_o,
     output                                         locked_in_o,
 
-    output                                         rate_violation_o
+    output                                         rate_violation_o,
+    output                                         smaller_data_bit_detected_o
 );
 
 // Clock Configuration
@@ -41,30 +42,24 @@ module lockin (
 // Half Rate Check
     wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] half_of_active_rate = clks_alot_p::RATE_COUNTER_WIDTH'(active_rate_i[(clks_alot_p::RATE_COUNTER_WIDTH)-1:1]);
     wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] half_upper_bound = using_pin_came_late
-                                                             ? (half_of_active_rate + half_rate_limits_i.drift_window)
-                                                             : half_of_active_rate; // Dont need to subtract since the half rate will be the upper bound
-    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] half_lower_bound = using_pin_came_early
-                                                             ? (half_of_active_rate_i - half_rate_limits_i.drift_window)
-                                                             : half_of_active_rate_i; // Dont need to add since the half rate will be the upper bound
-    // Update active rate anytime this is true during a filtered event - signals we may not have the shortest bit duration
+                                                                  ? (half_of_active_rate + half_rate_limits_i.drift_window)
+                                                                  : half_of_active_rate;
     wire less_than_half_upper_bound = rate_accumulator_i <= half_upper_bound;
-    wire more_than_half_lower_bound = rate_accumulator_i >= half_lower_bound;
-    wire rate_within_half_window = less_than_half_upper_bound && more_than_half_lower_bound;
 
 // Drift Window Check
     wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] upper_bound = using_pin_came_late
-                                                        ? (active_rate_i + half_rate_limits_i.drift_window)
-                                                        : active_rate_i; // Dont need to subtract since the half rate will be the upper bound
+                                                             ? (active_rate_i + half_rate_limits_i.drift_window)
+                                                             : active_rate_i;
     wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] lower_bound = using_pin_came_early
-                                                        ? (active_rate_i - half_rate_limits_i.drift_window)
-                                                        : active_rate_i; // Dont need to add since the half rate will be the upper bound
+                                                             ? (active_rate_i - half_rate_limits_i.drift_window)
+                                                             : active_rate_i;
     
     wire less_than_upper_bound = rate_accumulator_i <= upper_bound;
     wire more_than_rate = rate_accumulator_i > active_rate_i;
     wire more_than_lower_bound = rate_accumulator_i >= lower_bound;
     wire less_than_rate = rate_accumulator_i < active_rate_i;
     
-    wire rate_within_window = less_than_upper_bound && more_than_half_lower_bound;
+    wire rate_within_window = less_than_upper_bound && more_than_lower_bound;
     wire pin_came_late_check = more_than_rate && less_than_upper_bound;
     wire pin_came_early_check = less_than_rate && more_than_lower_bound;
 
@@ -107,10 +102,13 @@ module lockin (
 
 // Event Filtering
     assign update_rate_o = (polarity_filtered_event_i && active_rate_valid_i && rate_within_window)
-                        || (polarity_filtered_event_i && active_rate_valid_i && rate_within_half_window)
+                        || smaller_data_bit_detected_o
                         || (polarity_filtered_event_i && ~active_rate_valid_i);
     assign clear_rate_o = filtered_event_i;
-    assign rate_violation_o = (polarity_filtered_event_i && active_rate_valid_i && ~rate_within_window)
-                           && (polarity_filtered_event_i && active_rate_valid_i && ~rate_within_half_window)
+    assign rate_violation_o = polarity_filtered_event_i && active_rate_valid_i && ~rate_within_window;
+    // This only checks for the upper bound, since if its smaller, then their is a good chance that we havent caught the smallest data bit duration
+    // This can optionally be used as a violation elsewhere.
+    assign smaller_data_bit_detected_o = polarity_filtered_event_i && active_rate_valid_i && less_than_half_upper_bound;
+
 
 endmodule : lockin

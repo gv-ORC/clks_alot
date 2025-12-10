@@ -19,6 +19,7 @@ package clks_alot_p;
         // 1: Only use High rates respectively
         logic even_50_50_en;
         /*
+        TODO: Update these diagrams to represent the newest filtering and lockin systems
         | = Desired Rate
         { = Minimum Violation Rate (Lock-In effected)
         } = Maximum Violation Rate (Lock-In effected)

@@ -32,36 +32,34 @@ module generation (
 );
 
 /*
-> Do not update the rate if it's within the defined drift window...
-  Or have the lockin be a set number of identical rates in a row... Just have a counter
-> Have a max allowable amount of IO cycles with inconsitant rates that can occur before a "difficultly locking" violation is raised 
-  (Kinda like a, "lockin timeout")
-> Have an allowable drift-frequency... if drifting happens too often, then throw an "non-even multiple rate detected"
-Expected Counter: (* = received edge, ? = Assumed edge)
-30, 31, 32?, 33, 34, 35, 36?, 37, 38, 39*, 40, 41, 42, 43*, 44
-Drift Accumulator:
-0,  0,  0,   0,  0,  0,  0,   0,  0,  0,   -1, 0,  0,   0,  0
-Expected Edge Limit: (* = Update Drift Accumulator)
-32, 32, 32, 36, 36, 36, 36, 40, 40, 40,  43, 43, 43, 43,  47
-Missed Cycle Counter: (Tracks how many times the local system has toggled its state without seeing any data edges - Only for Pausable)
-0,      1,               2,                0,               0
 
-> Have a drift-accumulator for preemptive counters that are overly preemptive.
-> Apply the drift-accumulator at-most once every `n` IO Edges. (This should be configurable) 
-  ^ NO.. if a drift happens that often, it should flag an error...
-    > Instead, have a way to configure how offten a drift is allowed to occur
-Preemptive Counter:
-27, 28*, 29, 30, 31, 32*, 33, 34, 35, 36*, 37, 38, 39*, 40, 41, 42, 43*
-Drift Accumulator:
-0,  0,   0,  0,  0,  0,   0,  0,  0,  0,   -1, 0,  0,   0,  0,  0,  0
-Preemtive Edge Limit: (* = Apply Drift Accumulator)
-28, 28,  32, 32, 32, 32,  36, 36, 36, 36, 40*, 39, 39,  43, 43, 43, 43
+? Mimic Not 50-50: Low Half-Rate 2(h), High Half-Rate 2(l), Starts at (s) = 10, Rx Delay (r) = 3, Tx Delay (t) = 3, Counter(c), Drift Window (w) = 1
+* Incoming - The clock signal from the pin after it has been properly syncronized and had events extracted
+* Expected - Generated clock that mimics the cycle that the clock would have arrived directly at the Rx Pin
+*          > Seed Expected by: (@f1 <= (c + 2h + 2l) - r)
+* Premptive - Generated clock that triggers events earlier than the pin, to account for pipeline and sync latency
+*           > Seed Preemptive by: (@f1 <= (c + 2h + 2l) - r - t)
 
-TODO:
-1. Create a lockin system that looks for repeating clock rates, or a multiple of clock rates (ex, rate is 10, next edge is at 20)
-2. Create Drift-History system for assumed drifts during strings of like-bits (pausable data)
-3. Create proper Counter system
-4. Work on how pausing will work... (between transactions, not during like-bits inside the same transaction)
+                                                                                                       Neg Drift                        Pos Drift
+Incoming Edge Name:                              f0    r0    f1    r1    f2    r2    f3    r3    f4    r4(f5)   r5    f6    r6    f7      (r7)    f8    r8    f9    r9    f10
+Incoming Clock:             xxxxxxx---------------______------______------______------______------______---______------______------_________------______------______------___
+Counter(c):                 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
+Drift Edge Name:                                                         f2    r2    f3    r3    f4    r4(f5)    r5    f6    r6    f7     (r7)   f8    r8   f9    r9    f10
+Drift Clock (fake):         xxxxxxxxxxxxxxxxxxxxxx------------------------______------______------______---______------______------_________------______------______------___
+Drift Event Upper Limit:    x x x x x x x x x x x  -  -  -  -  17 17 17 17 19 19 21 21 23 23 25 25 27 27 29 32 32 34 34 36 36 38 38 40 40 40 43 43 45 45 47 47 49 49 51 51 53
+Drift Target:               x x x x x x x x x x x  -  -  -  -  18 18 18 18 20 20 22 22 24 24 26 26 28 28 30 31 31 33 33 35 35 37 37 39 39 39 42 42 44 44 46 46 48 48 50 50 52
+Drift Event Lower Limit:    x x x x x x x x x x x  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 31 30 30 32 32 34 34 36 36 38 38 38 41 41 43 43 45 45 47 47 49 49 51
+Expected Edge Name:                                                         f3    r3    f4    r4    f5    r5(f6)   r6    f7    r7    f8      (r8)    f9   r9    f10   r10
+Expected Clock:             xxxxxxxxxxxxxxxxxxxxxx---------------------------______------______------______---______------______------_________------______------______------
+Expected Half-Rate Limit:   x x x x x x x x x x x  -  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 31 32 32 34 34 36 36 38 38 40 40 41 43 43 45 45 47 47 49 49 51 51
+Expected High Half-Rate:    x x x x x x x x x x x  -  -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Expected Low Half-Rate:     x - - - - - - - - - -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Preemptive Edge Name:                                              f3    r3    f4    r4    f5    r5    f6    r6(f7)   r7    f8    r8    f9      (f9)    f10   r10   f11   r11
+Preemptive Clock:           xxxxxxxxxxxxxxxxxxxxxx------------------______------______------______------______---______------______------_________------______------______---
+Preemptive Half-Rate Limit: x x x x x x x x x x x  -  -  -  16 16 16 18 18 20 20 22 22 24 24 26 26 28 28 30 30 32 33 33 35 35 37 37 39 39 41 41 42 44 44 46 46 48 48 50 50 52
+Preemptive High Half-Rate:  x x x x x x x x x x x  -  -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Preemptive Low Half-Rate:   x - - - - - - - - - -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+
 */
 
 // Counter

@@ -21,12 +21,14 @@ always_comb begin : recovery_drivers_mux
         SINGLE_CONTINUOUS : begin
             // Primary:   _-
             recovered_events_o.rising_edge = driver_events_i.primary_rising_edge;
+            // Primary:   -_
             recovered_events_o.falling_edge = driver_events_i.primary_falling_edge;
             recovered_events_o.any_valid_edge = driver_events_i.primary_either_edge;
         end
         SINGLE_PAUSABLE : begin
             // Primary:   _-
             recovered_events_o.rising_edge = driver_events_i.primary_rising_edge;
+            // Primary:   -_
             recovered_events_o.falling_edge = driver_events_i.primary_falling_edge;
             recovered_events_o.any_valid_edge = driver_events_i.primary_either_edge;
         end

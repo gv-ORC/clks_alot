@@ -4,7 +4,6 @@ binary_value_prioritizer #(
 )(
     input    common_p::clk_dom_s sys_dom_i,
 
-    input                        priotize_en_i,
     input                        clear_state_i,
 
     input  [COUNT_BIT_WIDTH-1:0] growth_rate_i,

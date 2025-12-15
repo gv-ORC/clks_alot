@@ -44,26 +44,44 @@ module sir_clks_alot (
 
     assign busy_o = active_current || busy_delay_current;
 
-// Event Recovery
+// Recovery
     wire                            primary_clk;
     clks_alot_p::recovered_events_s recovered_events;
 
-    event_recovery event_recovery (
-        .sys_dom_i         (sys_dom_i),
-        .recovery_en_i     (),
-        .source_select_i   (),
-        .recovery_mode_i   (),
-        .io_clk_i          (io_clk_i),
-        .primary_clk_o     (primary_clk),
-        .recovered_events_o(recovered_events),
-    );
-    
-// Rate Recovery
-    rate_recovery rate_recovery (
-    
+    recovery recovery (
+        .sys_dom_i                 (),
+        .recovery_en_i             (),
+        .clear_state_i             (),
+        .source_select_i           (),
+        .recovery_mode_i           (),
+        .io_clk_i                  (),
+        .bandpass_upper_bound_i    (),
+        .bandpass_lower_bound_i    (),
+        .bandpass_overshoot_o      (),
+        .bandpass_undershoot_o     (),
+        .drift_polarity_en_i       (),
+        .drift_polarity_i          (),
+        .drift_window_i            (),
+        .positive_drift_violation_o(),
+        .negative_drift_violation_o(),
+        .clock_encoded_data_en_i   (),
+        .rounding_polarity_i       (),
+        .growth_rate_i             (),
+        .decay_rate_i              (),
+        .saturation_limit_i        (),
+        .plateau_limit_i           (),
+        .recovered_clk             (),
+        .recovered_events_o        (),
+        .fully_locked_in_o         (),
+        .high_locked_in_o          (),
+        .high_rate_changed_o       (),
+        .high_rate_o               (),
+        .low_locked_in_o           (),
+        .low_rate_changed_o        (),
+        .low_rate_o                ()
     );
 
-// Clocks & Event Generation (Needs to provide event feedback)
+// Generation
 
 
 endmodule : sir_clks_alot

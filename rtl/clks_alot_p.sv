@@ -13,6 +13,8 @@ package clks_alot_p;
     parameter RATE_COUNTER_WIDTH = 32;
     parameter DRIFT_COUNTER_WIDTH = 8;
 
+    parameter PRIORITIZE_COUNTER_WIDTH = 8;
+
 // Configuration Structs
     typedef struct packed {
         // 0: Use High and Low rates respectively

@@ -39,9 +39,13 @@ binary_value_prioritizer_cell #(
 
 // Saturation Counter
     wire   matches_our_cell_o = value_current == data_i;
-    assign count_plateaued_o = (saturation_count_o <= plateau_limit_i) && we_have_priority_i;
+    assign count_plateaued_o = saturation_count_o <= plateau_limit_i;
 
-    wire   decay_en = ~matches_our_cell_o && ~plateau_check;
+    wire   will_be_negative_check = saturation_count_o < decay_rate_i;
+
+    wire   decay_en = we_have_priority_i
+                    ? (~matches_our_cell_o && ~plateau_check && count_plateaued_o)
+                    : (~matches_our_cell_o && will_be_negative_check);
     wire   clear_en = (~matches_our_cell_o && ~we_have_priority_i)
                    || clear_state_i;
 

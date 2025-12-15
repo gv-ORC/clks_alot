@@ -21,6 +21,10 @@ module counter #(
     wire             [1:0] count_next_condition;
     assign                 count_next_condition[0] = init_en_i || clear_en_i || sync_rst;
     assign                 count_next_condition[1] = (decay_en_i && ~init_en_i) || clear_en_i || sync_rst;
+
+    wire   [BIT_WIDTH-1:0] filtered_decay_rate = (count_current < decay_rate_i)
+                                               ? count_current
+                                               : decay_rate_i;
     always_comb begin : count_nextMux
         case (count_next_condition)
             2'b00  : count_next = count_current + growth_rate_i;

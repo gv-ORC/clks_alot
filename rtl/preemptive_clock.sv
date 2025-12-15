@@ -15,7 +15,8 @@
 *           > Sync Delta on Rising Edge by:  //! Validate this once we go to longer clock periods
 *           > Seed Delta on Falling Edge by:  //! Validate this once we go to longer clock periods
 
->NOTE: ((r + w) <= (h + l)) && ((t + w) <= (h + l))
+>NOTE: (r + w) <= (h + l)
+>NOTE: (t + w) <= (h + l)
                                                                                    Seed Sync   Start Sync  Neg Drift                  Neg Drift                       Pos Drift                        Pos Drift
 Incoming Edge Name:                                f0    r0    f1    r1    f2    r2   [f3]    r3   [f4]    r4(f5)   r5    f6    r6    f7(r7)   f8    r8    f9    r9    (f10)  r10  f11    r11   f12     (r12)  f13   r13   f14   r14
 Incoming Clock:               xxxxxxx---------------______------______------______------______------______---______------______------___------______------______---------______------______------_________------______------______------

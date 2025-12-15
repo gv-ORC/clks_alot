@@ -1,59 +1,108 @@
 module lockin (
-    input                 common_p::clk_dom_s sys_dom_i,
+    input                      common_p::clk_dom_s sys_dom_i,
+
+    input                                          lockin_en_i,
+    input                                          clear_state_i,
+
+    input           clks_alot_p::drift_direction_e active_drift_direction_i, // This should already have the active drift direction taken into account.
+    input          clks_alot_p::half_rate_limits_s half_rate_limits_i,
+
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] rate_accumulator_i,
+    input                                          filtered_event_i,
+    input                                          polarity_filtered_event_i,
+    input                                          active_rate_valid_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] active_rate_i,
     
-    input                                     recovery_en_i,
-    input     clks_alot_p::half_rate_limits_s half_rate_limits_i,
+    // These signals loop back to drive `active_drift_direction_i` after the first valid drift
+    output                                         drift_detected_o,
+    output          clks_alot_p::drift_direction_e drift_direction_o,
+    output [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] drift_amount_o,
 
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] current_rate_counter_i,
-    input                                     filtered_event_i,
+    output                                         update_rate_o,
+    output                                         clear_rate_o,
+    output                                         locked_in_o,
 
-    output    clks_alot_p::half_rate_limits_s filtered_limits_o
+    output                                         rate_violation_o,
+    output                                         smaller_data_bit_detected_o
 );
 
-/*
-    Unpausable:
-        Current
-        xxx{vvv<---|--->vvv}xxx
-        xxx{vvvv<--|-->vvvv}xxx
-        xxx{vvvvv<-|->vvvvv}xxx
+// Clock Configuration
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
-    Pausable:
-               At most half : Current
-        xxx{vvv<---|--->vvv...vvv<---|--->vvv}xxx
-        xxx{vvvv<--|-->vvvv...vvvv<--|-->vvvv}xxx
-        xxx{vvvvv<-|->vvvvv...vvvvv<-|->vvvvv}xxx
-    For Pausable Recovery: Skew must be set at an appropriate level for the expected drift during the longest sequence of like bits.
+// Direction Selection
+    wire full_drift_direction_en = half_rate_limits_i.full_drift_direction_en;
+
+    wire using_pin_came_late = (active_drift_direction_i == clks_alot_p::PIN_CAME_LATE)
+                            || full_drift_direction_en;
+    wire using_pin_came_early = (active_drift_direction_i == clks_alot_p::PIN_CAME_EARLY)
+                             || full_drift_direction_en;
+
+// Half Rate Check
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] half_of_active_rate = clks_alot_p::RATE_COUNTER_WIDTH'(active_rate_i[(clks_alot_p::RATE_COUNTER_WIDTH)-1:1]);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] half_upper_bound = using_pin_came_late
+                                                                  ? (half_of_active_rate + half_rate_limits_i.drift_window)
+                                                                  : half_of_active_rate;
+    wire less_than_half_upper_bound = rate_accumulator_i <= half_upper_bound;
+
+//TODO: These comparisons may need to be moved into expected_event_generation when it calculates drift, can share results to save hardware
+// Drift Window Check
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] upper_bound = using_pin_came_late
+                                                             ? (active_rate_i + half_rate_limits_i.drift_window)
+                                                             : active_rate_i;
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] lower_bound = using_pin_came_early
+                                                             ? (active_rate_i - half_rate_limits_i.drift_window)
+                                                             : active_rate_i;
+    
+    wire less_than_upper_bound = rate_accumulator_i <= upper_bound;
+    wire more_than_rate = rate_accumulator_i > active_rate_i;
+    wire more_than_lower_bound = rate_accumulator_i >= lower_bound;
+    wire less_than_rate = rate_accumulator_i < active_rate_i;
+    
+    wire rate_within_window = less_than_upper_bound && more_than_lower_bound;
 
 
-*/
+//TODO: code below may need to be moved to generation
 
-// Initialization Check
-    wire init_limits;
-    monostable_full #(
-        .BUFFERED(1'b1)
-    ) init_check (
-        .clk_dom_s_i    (sys_dom_i),
-        .monostable_en_i(1'b1),
-        .sense_i        (recovery_en_i),
-        .prev_o         (), // Not Used
-        .posedge_mono_o (init_limits),
-        .negedge_mono_o (), // Not Used
-        .bothedge_mono_o()  // Not Used
-    );
+// Lockin Accumulator
+    reg  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] lockin_accumulator_current;
+    wire                                         lockin_saturation_check = lockin_accumulator_current == half_rate_limits_i.required_lockin_duration;
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] lockin_accumulator_next = (sync_rst || ~rate_within_window || clear_state_i)
+                                                                         ? clks_alot_p::RATE_COUNTER_WIDTH'(0)
+                                                                         : (lockin_accumulator_current + clks_alot_p::RATE_COUNTER_WIDTH'(1));
+    wire                                    lockin_accumulator_trigger = sync_rst 
+                                                                      || (clk_en && polarity_filtered_event_i && lockin_en_i)
+                                                                      || (clk_en && clear_state_i);
+    always_ff @(posedge clk) begin
+        if (lockin_accumulator_trigger) begin
+            lockin_accumulator_current <= lockin_accumulator_next;
+        end
+    end
 
-//TODO: Have a way to validate the lockin that is configurable - 4x or 8x matching sequences.
-/*
-Have a counter that counts how many edges were within skew range.
+// Locked In Status
+    reg  locked_in_current;
+    wire locked_in_next = ~sync_rst && lockin_saturation_check && rate_within_window && ~clear_state_i;
+    wire locked_in_trigger = sync_rst
+                          || (clk_en && lockin_saturation_check && lockin_en_i)
+                          || (clk_en && polarity_filtered_event_i && lockin_en_i)
+                          || (clk_en && clear_state_i);
+    always_ff @(posedge clk) begin
+        if (locked_in_trigger) begin
+            locked_in_current <= locked_in_next;
+        end
+    end
+    assign locked_in_o = locked_in_current;
 
-// Current Rate - Updates every filtered edge
+// Event Filtering
+    assign update_rate_o = (polarity_filtered_event_i && active_rate_valid_i && rate_within_window)
+                        || smaller_data_bit_detected_o
+                        || (polarity_filtered_event_i && ~active_rate_valid_i);
+    assign clear_rate_o = filtered_event_i;
+    assign rate_violation_o = polarity_filtered_event_i && active_rate_valid_i && ~rate_within_window;
+    // This only checks for the upper bound, since if its smaller, then their is a good chance that we havent caught the smallest data bit duration
+    // This can optionally be used as a violation elsewhere.
+    assign smaller_data_bit_detected_o = polarity_filtered_event_i && active_rate_valid_i && less_than_half_upper_bound;
 
-// Last Rate - Used to determine the validity of the next edge
-
-// Output Assignments
-    assign filtered_limits_o.;
-    assign filtered_limits_o.;
-    assign filtered_limits_o.;
-    assign filtered_limits_o.maximum_band_minus_one = half_rate_limits_i.maximum_band_minus_one;
-    assign filtered_limits_o.minimum_band_minus_one = half_rate_limits_i.minimum_band_minus_one;
 
 endmodule : lockin

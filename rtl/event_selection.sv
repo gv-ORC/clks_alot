@@ -1,4 +1,4 @@
-module event_detection (
+module event_selection (
     input                common_p::clk_dom_s sys_dom_i,
 
     input                                  recovery_en_i,
@@ -21,12 +21,14 @@ always_comb begin : recovery_drivers_mux
         SINGLE_CONTINUOUS : begin
             // Primary:   _-
             recovered_events_o.rising_edge = driver_events_i.primary_rising_edge;
+            // Primary:   -_
             recovered_events_o.falling_edge = driver_events_i.primary_falling_edge;
             recovered_events_o.any_valid_edge = driver_events_i.primary_either_edge;
         end
         SINGLE_PAUSABLE : begin
             // Primary:   _-
             recovered_events_o.rising_edge = driver_events_i.primary_rising_edge;
+            // Primary:   -_
             recovered_events_o.falling_edge = driver_events_i.primary_falling_edge;
             recovered_events_o.any_valid_edge = driver_events_i.primary_either_edge;
         end
@@ -78,4 +80,4 @@ always_comb begin : recovery_drivers_mux
     endcase
 end
 
-endmodule : event_detection
+endmodule : event_selection

@@ -41,7 +41,7 @@ module monostable_full #(
         if (BUFFERED) begin
             wire       posedge_check = ~sense_prev_current && sense_i && monostable_en_i;
             wire       negedge_check = sense_prev_current && ~sense_i && monostable_en_i;
-            wire       bothedge_check = posedge_mono_o || negedge_mono_o;
+            wire       bothedge_check = (sense_prev_current ^ sense_i) && monostable_en_i;
 
             reg  [3:0] output_buffer_current;
             wire [3:0] output_buffer_next = sync_rst

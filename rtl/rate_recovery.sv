@@ -1,48 +1,42 @@
 module rate_recovery (
-    input                  common_p::clk_dom_s sys_dom_i,
-    
-    input                                      recovery_en_i,
-    input         clks_alot_p::recovery_conf_s recovery_config_i,
 
-    input      clks_alot_p::recovered_events_s recovered_events_i,
-
-    output  [(clks_alot_p::COUNTER_WIDTH)-1:0] current_rate_o,
-    output clks_alot_p::recovered_half_rates_s recovered_half_rates_o
 );
 
-// Clock Config
-    wire clk = sys_dom_i.clk;
-    wire clk_en = sys_dom_i.clk_en;
-    wire sync_rst = sys_dom_i.sync_rst;
+/*
+    Pausable signals are either clocks that can be paused between transactions, or data that needs its clock recovered
 
-// High/50-50 Rate Counter
-    half_rate_recovery high_rate_recovery (
-        .sys_dom_i                  (),
-        .recovery_en_i              (),
-        .polarity_en_i              (),
-        .polarity_i                 (),
-        .primary_clk_i              (),
-        .clear_state_i              (),
-        .half_rate_limits_i         (),
-        .sense_event_i              (),
-        .current_rate_o             (),
-        .over_frequency_violation_o (),
-        .under_frequency_violation_o()
+    SINGLE_CONTINUOUS - Lockin by grabbing the rate and only allowing a certain amount of skew.
+      SINGLE_PAUSABLE - Update lockin when the new rate is less than half of the current rate, but still within the bounds.
+       DIF_CONTINUOUS - Lockin by halving the captured full rate, allowing a certain amount of skew.
+         DIF_PAUSABLE - Update lockin when the new rate is less than half of the current rate, but still within the bounds.
+      QUAD_CONTINUOUS - Lockin by halving the captured full rate, allowing a certain amount of skew.
+                        Force Use of `*.any_valid_edge`
+        QUAD_PAUSABLE - Update lockin when the new rate is less than half of the current rate, but still within the bounds. 
+                        Force Use of `*.any_valid_edge`
+
+    For non-single modes: Violation range will be anything between below half-rate
+
+    ? Polarity
+     >    Disabled - Update Rate on `*.any_valid_edge`
+     > Enabled Pos - Enable Counter on `*.rising_edge`, Update Rate on `*.falling_edge`
+     > Enabled Neg - Enable Counter on `*.falling_edge`, Update Rate on `*.rising_edge`
+
+* When in full-rate mode with an odd full-rate, have an option for which edge to apply the odd half-rate
+
+
+*/ 
+
+// Half-Rate Control (High/Both)
+    half_rate_recovery high_half_rate_recovery (
+    
     );
 
-// Low Rate Counter
-    half_rate_recovery low_rate_recovery (
-        .sys_dom_i                  (),
-        .recovery_en_i              (),
-        .polarity_en_i              (),
-        .polarity_i                 (),
-        .primary_clk_i              (),
-        .clear_state_i              (),
-        .half_rate_limits_i         (),
-        .sense_event_i              (),
-        .current_rate_o             (),
-        .over_frequency_violation_o (),
-        .under_frequency_violation_o()
+// Half-Rate Control (Low)
+    half_rate_recovery low_half_rate_recovery (
+
     );
+
+
+// Pause Control
 
 endmodule : rate_recovery

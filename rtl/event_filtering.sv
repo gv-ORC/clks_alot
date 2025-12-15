@@ -1,4 +1,4 @@
-module sense_filtering (
+module event_filtering (
     input     clks_alot_p::half_rate_limits_s half_rate_limits_i,
 
     // When enabled:
@@ -8,8 +8,8 @@ module sense_filtering (
     input                                     polarity_i,
     input                                     primary_clk_i,
 
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] current_rate_counter_i,
-    input                                     sense_event_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] current_rate_counter_i,
+    input                                     event_i,
 
     output                                    ignore_filtered_event_o,
     output                                    polarity_filtered_event_o,
@@ -27,10 +27,10 @@ module sense_filtering (
 
 // Sense Filter
     wire   ignore_check = ignore_over_check || ignore_under_check;
-    assign ignore_filtered_event_o = sense_event_i && ~ignore_check && ~polarity_en_i;
+    assign ignore_filtered_event_o = event_i && ~ignore_check;
     // TODO: This may be a critical path....
-    assign polarity_filtered_event_o = (sense_event_i && ~ignore_check && polarity_en_i && polarity_i && ~primary_clk_i)
-                                    || (sense_event_i && ~ignore_check && polarity_en_i && ~polarity_i && primary_clk_i)
-                                    || (sense_event_i && ~ignore_check && ~polarity_en_i);
+    assign polarity_filtered_event_o = (event_i && ~ignore_check && polarity_en_i && polarity_i && ~primary_clk_i)
+                                    || (event_i && ~ignore_check && polarity_en_i && ~polarity_i && primary_clk_i)
+                                    || (event_i && ~ignore_check && ~polarity_en_i);
 
-endmodule : sense_filtering
+endmodule : event_filtering

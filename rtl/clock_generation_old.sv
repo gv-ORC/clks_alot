@@ -1,5 +1,5 @@
 module clock_generation (
-    input            common_p::clk_dom_s sys_dom_i,
+    input          common_p::clk_dom_s sys_dom_i,
 
     input                              set_clock_low_i,
     input                              set_clock_high_i,
@@ -50,9 +50,9 @@ module clock_generation (
     end
 
     assign unpausable_state_o.status.pause_active = 1'b0;
-    assign unpausable_state_o.status.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
+    assign unpausable_state_o.status.pause_duration = clks_alot_p::RATE_COUNTER_WIDTH'(0);
     assign pausable_state_o.status.pause_active = pause_active_current;
-    assign pausable_state_o.status.pause_duration = clks_alot_p::COUNTER_WIDTH'(0);
+    assign pausable_state_o.status.pause_duration = clks_alot_p::RATE_COUNTER_WIDTH'(0);
 
 // Output Buffer
     reg  paused_clock_current;

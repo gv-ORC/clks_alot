@@ -1,5 +1,5 @@
 module generation (
-    input                   common_p::clk_dom_s sys_dom_i,
+    input                 common_p::clk_dom_s sys_dom_i,
 
     //? Generation
     input                                     set_polarity_i,
@@ -7,13 +7,13 @@ module generation (
 
     input                                     generation_en_i, // When this goes low, clock will stop on the next starting_polarity
     output                                    busy_o,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_half_rate_minus_two_i, // change every half-rate pulse, and you can get PWM
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] expected_quarter_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_half_rate_minus_one_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] preemptive_quarter_rate_minus_one_i,
 
     //? Recovery - To accomodate for skew/drift
-    input  [(clks_alot_p::COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
+    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] sync_cycle_offset_i,
     input          clks_alot_p::clock_state_s actual_clk_state_i, // for "Clock came too Early"
 
     //? Unpausable Output
@@ -31,162 +31,141 @@ module generation (
     output                                    pause_stop_violation_o
 );
 
-/* 
-* Approximations *
-Rx Sync Buffer: 3 (sync_cycle_offset_i)
-Clock Recovery: 1
-Clock Config: 1
-Clock Gen Delay: 1
-Tx Logic: 1 (+1?)
-Tx Buffer: 1(2) (only takes 1 cycle, but we add an extra to account for slip... slip needs to be adjustable based on speed... super slow clocks may have HUGE slip)
-Sync Buffer: 1* (Doesnt Count, this is our "sync bound" - data is gaurenteed to be stable for this clock as the timing for the internal register will made to meet sys_clk... as long as slip is set correctly)
-> Total Preemptive Anticipation: 8 Cycles (preemtive_cycle_count)
+/*
+! Cascade Drift
+? Mimic Not 50-50: Low Half-Rate 2(h), High Half-Rate 2(l), Starts at (s) = 10, Rx Delay (r) = 3, Tx Delay (t) = 3, Counter(c), Drift Window (w) = 1
+* Incoming - The clock signal from the pin after it has been properly syncronized and had events extracted
+* Expected - Generated clock that mimics the cycle that the clock would have arrived directly at the Rx Pin
+*          > Seed Expected by: (@f1 <= (c + 2h + 2l) - r)
+* Premptive - Generated clock that triggers events earlier than the pin, to account for pipeline and sync latency
+*           > Seed Preemptive by: (@f1 <= (c + 2h + 2l) - r - t)
 
-Minimum Half-Rate == Preemptive Anticipation
+                                                                                                       Neg Drift                        Pos Drift
+Incoming Edge Name:                              f0    r0    f1    r1    f2    r2    f3    r3    f4    r4(f5)   r5    f6    r6    f7      (r7)    f8    r8    f9    r9    f10
+Incoming Clock:             xxxxxxx---------------______------______------______------______------______---______------______------_________------______------______------___
+Counter(c):                 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
+Drift Edge Name:                                                         f2    r2    f3    r3    f4    r4(f5)    r5    f6    r6    f7     (r7)   f8    r8   f9    r9    f10
+Drift Clock (fake):         xxxxxxxxxxxxxxxxxxxxxx------------------------______------______------______---______------______------_________------______------______------___
+Drift Event Upper Limit:    x x x x x x x x x x x  -  -  -  -  17 17 17 17 19 19 21 21 23 23 25 25 27 27 29 32 32 34 34 36 36 38 38 40 40 40 43 43 45 45 47 47 49 49 51 51 53
+Drift Target:               x x x x x x x x x x x  -  -  -  -  18 18 18 18 20 20 22 22 24 24 26 26 28 28 30 31 31 33 33 35 35 37 37 39 39 39 42 42 44 44 46 46 48 48 50 50 52
+Drift Event Lower Limit:    x x x x x x x x x x x  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 31 30 30 32 32 34 34 36 36 38 38 38 41 41 43 43 45 45 47 47 49 49 51
+Expected Edge Name:                                                         f3    r3    f4    r4    f5    r5(f6)   r6    f7    r7    f8      (r8)    f9   r9    f10   r10
+Expected Clock:             xxxxxxxxxxxxxxxxxxxxxx---------------------------______------______------______---______------______------_________------______------______------
+Expected Half-Rate Limit:   x x x x x x x x x x x  -  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 31 32 32 34 34 36 36 38 38 40 40 41 43 43 45 45 47 47 49 49 51 51
+Expected High Half-Rate:    x x x x x x x x x x x  -  -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Expected Low Half-Rate:     x - - - - - - - - - -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Preemptive Edge Name:                                              f3    r3    f4    r4    f5    r5    f6    r6(f7)   r7    f8    r8    f9      (f9)    f10   r10   f11   r11
+Preemptive Clock:           xxxxxxxxxxxxxxxxxxxxxx------------------______------______------______------______---______------______------_________------______------______---
+Preemptive Half-Rate Limit: x x x x x x x x x x x  -  -  -  16 16 16 18 18 20 20 22 22 24 24 26 26 28 28 30 30 32 33 33 35 35 37 37 39 39 41 41 42 44 44 46 46 48 48 50 50 52
+Preemptive High Half-Rate:  x x x x x x x x x x x  -  -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Preemptive Low Half-Rate:   x - - - - - - - - - -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
 
-Core Clock -> IO Clock
-   100 Mhz -> 6.25 Mhz
-   200 Mhz -> 12.5 Mhz
 
-Use larger counters... allow the clocks to overlap
+! Insta-Sync Drift]
+? Mimic Not 50-50: Low Half-Rate 2(h), High Half-Rate 2(l), Starts at (s) = 10, Rx Delay (r) = 3, Tx Delay (t) = 3, Counter(c), Drift Window (w) = 1
+* Incoming - The clock signal from the pin after it has been properly syncronized and had events extracted
+* Drift(d) - 
+*          > Seed Drift by: [@f1] <= c + h + l
+* Expected(e) - Generated clock that mimics the cycle that the clock would have arrived directly at the Rx Pin
+*             > Seed Expected by: [@f1]+1 <= (d + h + l) - r
+* Premptive - Generated clock that triggers events earlier than the pin, to account for pipeline and sync latency
+*           > Seed Preemptive by: [@f1]+1 <= e - t
+
+>NOTE: (r + w) <= (h + l) 
+                                                                                                       Neg Drift                    Neg Drift                        Pos Drift                        Pos Drift
+Incoming Edge Name:                                f0    r0    f1    r1    f2    r2    f3    r3    f4    r4(f5)   r5    f6    r6    f7(r7)   f8    r8    f9    r9      (f10)  r10  f11    r11   f12     (r12)  f13   r13   f14   r14
+Incoming Clock:               xxxxxxx---------------______------______------______------______------______---______------______------___------______------______---------______------______------_________------______------______------
+Counter(c):                   0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70
+Drift Edge Name:                                                           f2    r2    f3    r3    f4    r4(f5)   r5    f6    r6    f7(r7)   f8    r8    f9    r9      (f10)  r10  f11    r11   f12     (r12)  f13   r13   f14   r14
+Drift Clock (fake):           xxxxxxxxxxxxxxxxxxxxxx------------------------______------______------______---______------______------___------______------______---------______------______------_________------______------______------
+Drift High Half-Rate:         x x x x x x x x x x x  -  -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Drift Low Half-Rate:          x - - - - - - - - - -  -  -  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2
+Drift Event Upper Limit:      x x x x x x x x x x x  -  -  -  -  17 17 17 17 19 19 21 21 23 23 25 25 27 27 29 32 32 34 34 36 36 38 38 40 41 41 43 43 45 45 47 47 49 49 49 52 52 54 54 56 56 58 58 60 60 60 63 63 65 65 67 67 69 69 71 71
+Drift Target:                 x x x x x x x x x x x  -  -  -  -  18 18 18 18 20 20 22 22 24 24 26 26 28 28 30 31 31 33 33 35 35 37 37 39 40 40 42 42 44 44 46 46 48 48 48 51 51 53 53 55 55 57 57 59 59 59 62 62 64 64 66 66 68 68 70 70
+Drift Event Lower Limit:      x x x x x x x x x x x  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 31 30 30 32 32 34 34 36 36 38 39 39 41 41 43 43 45 45 47 47 47 50 50 52 52 54 54 56 56 58 58 58 61 61 63 63 65 65 67 67 69 69
+Drift:Expected Limit Delta:   x x x x x x x x x x x  -  -  -  -  -  1  1  1  -1 1  -1 1  -1 1  -1 1  -1 1  -1 -1 1  -1 1  -1 1  -1 1  -1 -1 1  -1 1  -1 1  -1 1  -1 1  1  -1 1  -1 1  -1 1  -1 1  -1 1  1  -1 1  -1 1  -1 
+Drift:Preemptive Limit Delta: x x x x x x x x x x x  -  -  -  -  -  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  2  0
+Expected Edge Name:                                                           f3    r3    f4    r4    f5    r5(f6)    r6    f7    r7   f8(r8)   f9    r9    f10   r10     (f11)  r11   f12   r12   f13      (r13) f14   r14   f15   r15
+Expected Clock:               xxxxxxxxxxxxxxxxxxxxxx---------------------------______------______------______---______------______------___------______------______---------______------______------_________------______------______---
+Expected Half-Rate Limit:     x x x x x x x x x x x  -  -  -  -  -  19 19 19 19 21 21 23 23 25 25 27 27 29 29 30 32 32 34 34 36 36 38 38 39 41 41 43 43 45 45 47 47 49 49 50 52 52 54 54 56 56 58 58 60 60 61 63 63 65 65 67 67 69 69 71
+Preemptive Edge Name:                                                f3    r3    f4    r4    f5    r5    f6(r6)  f7    r7    f8    r8(f9)   r9    f10   r10   f11   r11     (f12)  r12   f13   r13   f14     (r14)  f15   r15   f16
+Preemptive Clock:             xxxxxxxxxxxxxxxxxxxxxx------------------______------______------______------___------______------______---______------______------______---------______------______------_________------______------______
+Preemptive Half-Rate Limit:   x x x x x x x x x x x  -  -  -  -  -  16 18 18 20 20 22 22 24 24 26 26 28 28 30 31 31 33 33 35 35 37 37 39 40 40 42 42 44 44 46 46 48 48 50 51 51 53 53 55 55 57 57 59 59 61 62 62 64 64 66 66 68 68 70 70
 */
 
-// Clock Configuration
-    wire clk = sys_dom_i.clk;
-    wire clk_en = sys_dom_i.clk_en;
-    wire sync_rst = sys_dom_i.sync_rst;
+// Counter
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] null_seed = clks_alot_p::RATE_COUNTER_WIDTH'(0);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] cycle_count_current;
+    //? New Module
+    // counter #(
+    //     BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
+    // ) cycle_counter (
+    //     .sys_dom_i (sys_dom_i),
+    //     .init_i    (1'b0),
+    //     .seed_i    (null_seed),
+    //     .count_en_i(generation_en_i),
+    //     .clear_en_i(clear_state_i),
+    //     .count_o   (cycle_count_current),
+    // );
 
-// Active Status
-    reg  active_current;
-    wire active_next = ~sync_rst && generation_en_i;
-    wire active_trigger = sync_rst
-                       || (clk_en && ~active_current && generation_en_i)
-                       || (clk_en && active_current && ~(clock_state_current ^ starting_polarity_i));
-    always_ff @(posedge clk) begin
-        if (active_trigger) begin
-            active_current <= active_next;
-        end
-    end
 
-    reg  busy_delay_current;
-    wire busy_delay_next = ~sync_rst && active_current && ~generation_en_i;
-    wire busy_delay_trigger = sync_rst || clk_en;
-    always_ff @(posedge clk) begin
-        if (busy_delay_trigger) begin
-            busy_delay_current <= busy_delay_next;
-        end
-    end
+// Next Expected Half-Rate Limit (Quarter-Rate is calculated off of this)
+/*
+Reacts instantly to incoming events.
+Uses incoming events to calculate drifts.
+Hold last Limit to check for the late-half of the drift window.
+Detects and Forwards Drift Events
+*/
 
-    assign busy_o = active_current || busy_delay_current;
-
-// Clock Event Detection and Correction
-    reg  [(clks_alot_p::COUNTER_WIDTH)-1:0] cycle_count_current;
-
-    reg  half_rate_delay_current;
-    wire expected_half_rate_elapsed = cycle_count_current == expected_half_rate_minus_two_i;
-    wire nudge_check = actual_clk_state_i.events.falling_edge || actual_clk_state_i.events.rising_edge;
-    wire half_rate_delay_next = ~sync_rst && expected_half_rate_elapsed && ~busy_delay_current;
-    wire half_rate_delay_trigger = sync_rst
-                                || (clk_en && clock_active_i && expected_half_rate_elapsed) // Set
-                                || (clk_en && clock_active_i && nudge_check) // Clear
-                                || (clk_en && busy_delay_current);
-    always_ff @(posedge clk) begin
-        if (half_rate_delay_trigger) begin
-            half_rate_delay_current <= half_rate_delay_next;
-        end
-    end
-
-    wire expected_quarter_rate_elapsed = cycle_count_current == expected_quarter_rate_minus_one_i;
-    wire preemptive_half_rate_elapsed = cycle_count_current == preemptive_half_rate_minus_one_i;
-    wire preemptive_quarter_rate_elapsed = cycle_count_current == preemptive_quarter_rate_minus_one_i;
-
-    wire stall_check = half_rate_delay_current ^ nudge_check;
-
-// Cycle Counter
-    logic  [(clks_alot_p::COUNTER_WIDTH)-1:0] cycle_count_next;
-    wire                                [1:0] cycle_count_next_condition;
-    assign                                    cycle_count_next_condition[0] = nudge_check;
-    assign                                    cycle_count_next_condition[1] = half_rate_delay_current || sync_rst || busy_delay_current;
-    always_comb begin : cycle_count_nextMux
-        case (cycle_count_next_condition)
-            2'b00  : cycle_count_next = cycle_count_current + clks_alot_p::COUNTER_WIDTH'(1);
-            2'b01  : cycle_count_next = sync_cycle_offset_i;
-            2'b10  : cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
-            2'b11  : cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
-            default: cycle_count_next = clks_alot_p::COUNTER_WIDTH'(0);
-        endcase
-    end
-    wire cycle_count_trigger = sync_rst
-                            || (clk_en && active_current)
-                            || (clk_en && busy_delay_current);
-    always_ff @(posedge clk) begin
-        if (cycle_count_trigger) begin
-            cycle_count_current <= cycle_count_next;
-        end
-    end
-
-// Clock Control, Expected - Inherent 1 Cycle Delay to enforce phase-accurate pausing
-    wire set_expected_clock_low = (set_polarity_i && ~starting_polarity_i)
-                               || (busy_delay_current && ~starting_polarity_i)
-                               || actual_clk_state_i.events.falling_edge;
-    wire set_expected_clock_high = (set_polarity_i && ~starting_polarity_i)
-                                || (busy_delay_current && starting_polarity_i)
-                                || actual_clk_state_i.events.rising_edge;
-
-    clock_state expected_clock_state (
-        .sys_dom_i             (sys_dom_i),
-        .set_clock_low_i       (set_expected_clock_low),
-        .set_clock_high_i      (set_expected_clock_high),
-        .clock_active_i        (active_current),
-        .clear_state_i         (busy_delay_current),
-        .half_rate_elapsed_i   (expected_half_rate_elapsed),
-        .quarter_rate_elapsed_i(expected_quarter_rate_elapsed),
-        .unpausable_state_o    (unpausable_expected_clk_state_o),
-        .pause_en_i            (pause_en_i),
-        .pause_polarity_i      (pause_polarity_i),
-        .pausable_state_o      (pausable_expected_clk_state_o)
+// Lockin the state of the expected clock - Checks for High and Low rates together or Full rates if that is configured
+//TODO: Refactor to support new architecture... and to include support for skipped-events during pausable data
+//TODO:                                         ^ `~drift_detected && event` will support skipped-events,
+//TODO:                                            as long as rate accumulator is reset by expected events
+//TODO:                                       ! ^^^^^^^^ ! Already does this, with the same caveat ! ^^^^^^^^^ !
+    lockin lockin (
+        .sys_dom_i                (),
+        .lockin_en_i              (),
+        .clear_state_i            (),
+        .active_drift_direction_i (),
+        .half_rate_limits_i       (),
+        .rate_accumulator_i       (),
+        .filtered_event_i         (),
+        .polarity_filtered_event_i(),
+        .active_rate_valid_i      (),
+        .active_rate_i            (),
+        .drift_detected_o         (),
+        .drift_direction_o        (),
+        .drift_amount_o           (),
+        .update_rate_o            (),
+        .clear_rate_o             (),
+        .locked_in_o              (),
+        .rate_violation_o         ()
     );
 
-    wire expected_pause_active_pulse;
-
-    monostable_full #(
-        .BUFFERED(1'b0)
-    ) expected_pause_monostable_gen (
-        .clk_dom_s_i      (sys_dom_i),
-        .monostable_en_i(1'b1),
-        .sense_i        (expected_clk_state_o.pause_active),
-        .prev_o         (), // Not Used
-        .posedge_mono_o (expected_pause_active_pulse),
-        .negedge_mono_o (), // Not Used
-        .bothedge_mono_o()  // Not Used
+// Drift Tracking
+    drift_tracking drift_tracking (
+        .sys_dom_i                       (sys_dom_i),
+        .accumulator_en_i                (),
+        .clear_state_i                   (),
+        .drift_detected_i                (),
+        .drift_direction_i               (),
+        .max_drift_i                     (),
+        .drift_acc_overflow_o            (),
+        .inverse_drift_violation_o       (),
+        .minimum_drift_lockout_duration_i(),
+        .any_valid_edge_i                (),
+        .expected_drift_req_o            (),
+        .expected_drift_res_i            (),
+        .expected_drift_direction_o      (),
+        .preemptive_drift_req_o          (),
+        .preemptive_drift_res_i          (),
+        .preemptive_drift_direction_o    ()
     );
 
-// Clock Control, Preemptive - Inherent 1 Cycle Delay to enforce phase-accurate pausing
-    wire set_preemptive_clock_low = (set_polarity_i && ~starting_polarity_i)
-                                 || (busy_delay_current && ~starting_polarity_i)
-                                 || actual_clk_state_i.events.falling_edge
-                                 || (expected_clk_state_o.pause_active && ~pause_polarity_i);
-    wire set_preemptive_clock_high = (set_polarity_i && starting_polarity_i)
-                                  || (busy_delay_current && starting_polarity_i)
-                                  || actual_clk_state_i.events.rising_edge
-                                  || (expected_clk_state_o.pause_active && pause_polarity_i);
-
-    clock_state preemptive_clock_state (
-        .sys_dom_i             (sys_dom_i),
-        .set_clock_low_i       (set_clock_low),
-        .set_clock_high_i      (set_clock_high),
-        .clock_active_i        (active_current),
-        .clear_state_i         (busy_delay_current),
-        .half_rate_elapsed_i   (preemptive_half_rate_elapsed),
-        .quarter_rate_elapsed_i(preemptive_quarter_rate_elapsed),
-        .unpausable_state_o    (unpausable_preemptive_clk_state_o),
-        .pause_en_i            (pause_en_i),
-        .pause_polarity_i      (pause_polarity_i),
-        .pausable_state_o      (pausable_preemptive_clk_state_o)
-    );
-
-// Pause Violation Check
-    assign pause_start_violation_o = pause_en_i && expected_clk_state_o.pause_active && ~preemptive_clk_state_o.pause_active;
-    assign pause_stop_violation_o = ~pause_en_i && ~expected_clk_state_o.pause_active && preemptive_clk_state_o.pause_active;
+// Next Preemptive Half-Rate Limit (Quarter-Rate is calculated off of this)
+/*
+Reacts to drift events - Allows drifts to offset the next limit during preemptive events. 
+Uses active High Half-Rate and Low Half-Rate during event updates.
+*/
 
 endmodule : generation

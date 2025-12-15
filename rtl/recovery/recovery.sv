@@ -23,8 +23,10 @@ module recovery (
 // Bandpass
     input        [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_upper_bound_i,
     input        [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_lower_bound_i,
-    output                                               bandpass_overshoot_o,
-    output                                               bandpass_undershoot_o,
+    output                                               high_rate_bandpass_overshoot_o,
+    output                                               high_rate_bandpass_undershoot_o,
+    output                                               low_rate_bandpass_overshoot_o,
+    output                                               low_rate_bandpass_undershoot_o,
 
 // Drift
     // If 1: Only allow drift in 1 direction
@@ -34,8 +36,10 @@ module recovery (
     // If 0: Allow negative drift only
     input                                                drift_polarity_i,
     input        [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] drift_window_i,
-    output                                               positive_drift_violation_o,
-    output                                               negative_drift_violation_o,
+    output                                               high_rate_positive_drift_violation_o,
+    output                                               high_rate_negative_drift_violation_o,
+    output                                               low_rate_positive_drift_violation_o,
+    output                                               low_rate_negative_drift_violation_o,
 
 // Halving - Forces the high rate to monitor both edges, not just one... allowing it to more accurately recover a clock from data.
     // Low rate output is disabled during this mode...
@@ -46,15 +50,15 @@ module recovery (
     input                                                rounding_polarity_i,
 
 // Priotization Configuration   
-    input                          [COUNT_BIT_WIDTH-1:0] growth_rate_i,
-    input                          [COUNT_BIT_WIDTH-1:0] decay_rate_i,
+    input  [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] growth_rate_i,
+    input  [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] decay_rate_i,
     // `saturation_limit_i` needs to be at least 1 growth rate below the max allowed by `clks_alot_p::PRIORITIZE_COUNTER_WIDTH`
-    input                          [COUNT_BIT_WIDTH-1:0] saturation_limit_i,
+    input  [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] saturation_limit_i,
     // `plateau_limit_i` needs to be at greater-than or equal-to `decay_rate_i`
-    input                          [COUNT_BIT_WIDTH-1:0] plateau_limit_i,
+    input  [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] plateau_limit_i,
 
 // Output
-    output                                               recovered_clk,
+    output                                               recovered_clk_o,
     output               clks_alot_p::recovered_events_s recovered_events_o,
     // Raises when both High and Low are locked-in ... for when you want to ensure you have a 50% clock duty cycle
     output                                               fully_locked_in_o,
@@ -74,7 +78,7 @@ module recovery (
         .source_select_i   (source_select_i),
         .recovery_mode_i   (recovery_mode_i),
         .io_clk_i          (io_clk_i),
-        .primary_clk_o     (recovered_clk),
+        .primary_clk_o     (recovered_clk_o),
         .recovered_events_o(recovered_events)
     );
 
@@ -95,13 +99,13 @@ module recovery (
         .io_events_i               (recovered_events),
         .bandpass_upper_bound_i    (bandpass_upper_bound_i),
         .bandpass_lower_bound_i    (bandpass_lower_bound_i),
-        .bandpass_overshoot_o      (bandpass_overshoot_o),
-        .bandpass_undershoot_o     (bandpass_undershoot_o),
+        .bandpass_overshoot_o      (high_rate_bandpass_overshoot_o),
+        .bandpass_undershoot_o     (high_rate_bandpass_undershoot_o),
         .drift_polarity_en_i       (drift_polarity_en_i),
         .drift_polarity_i          (drift_polarity_i),
         .drift_window_i            (drift_window_i),
-        .positive_drift_violation_o(positive_drift_violation_o),
-        .negative_drift_violation_o(negative_drift_violation_o),
+        .positive_drift_violation_o(high_rate_positive_drift_violation_o),
+        .negative_drift_violation_o(high_rate_negative_drift_violation_o),
         .clock_encoded_data_en_i   (clock_encoded_data_en_i),
         .growth_rate_i             (growth_rate_i),
         .decay_rate_i              (decay_rate_i),
@@ -145,13 +149,13 @@ module recovery (
         .io_events_i               (recovered_events),
         .bandpass_upper_bound_i    (bandpass_upper_bound_i),
         .bandpass_lower_bound_i    (bandpass_lower_bound_i),
-        .bandpass_overshoot_o      (bandpass_overshoot_o),
-        .bandpass_undershoot_o     (bandpass_undershoot_o),
+        .bandpass_overshoot_o      (low_rate_bandpass_overshoot_o),
+        .bandpass_undershoot_o     (low_rate_bandpass_undershoot_o),
         .drift_polarity_en_i       (drift_polarity_en_i),
         .drift_polarity_i          (drift_polarity_i),
         .drift_window_i            (drift_window_i),
-        .positive_drift_violation_o(positive_drift_violation_o),
-        .negative_drift_violation_o(negative_drift_violation_o),
+        .positive_drift_violation_o(low_rate_positive_drift_violation_o),
+        .negative_drift_violation_o(low_rate_negative_drift_violation_o),
         .clock_encoded_data_en_i   (clock_encoded_data_en_i),
         .growth_rate_i             (growth_rate_i),
         .decay_rate_i              (decay_rate_i),

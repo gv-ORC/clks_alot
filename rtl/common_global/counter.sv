@@ -3,15 +3,15 @@ module counter #(
 )(
     input  common_p::clk_dom_s sys_dom_i,
     
-    input                      counter_en_i,
     input                      init_en_i,
+    input                      clear_en_i,
+
+    input                      counter_en_i,
     input                      decay_en_i,
 
     input      [BIT_WIDTH-1:0] seed_i,
     input      [BIT_WIDTH-1:0] growth_rate_i,
     input      [BIT_WIDTH-1:0] decay_rate_i,
-
-    input                      clear_en_i,
 
     output     [BIT_WIDTH-1:0] count_o
 );

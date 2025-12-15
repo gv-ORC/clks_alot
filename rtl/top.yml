@@ -1,0 +1,55 @@
+CAPI=2:
+name: "gv-ORC:sir_clks_alot:refactor_6"
+description: "Sir Clks Alot and its supporting modules/cores"
+
+filesets:
+  rtl:
+# Swap this out for the common repo once I split that off
+#    depend:
+#      - processor_academy:common:0.1.0
+    files:
+      # - clks_alot_p.sv
+      # - top.sv
+      - common_global/common_p.sv
+      - common_global/counter.sv
+      - common_global/monostable_full.sv
+      - common_local/decaying_saturation_counter.sv # ToDo: Optimized away
+      - common_local/binary_value_prioritizer_cell.sv
+      - common_local/binary_value_prioritizer.sv
+      - recovery/recovery_lockin_and_filtering.sv
+      - recovery/rate_recovery.sv
+      - recovery/event_selection.sv
+      - recovery/event_recovery.sv
+      - recovery/recovery.sv
+    file_type: systemVerilogSource
+  testRtl:
+    files:
+      - test/test_clk.sv
+      - test/recovery_tb.sv
+    file_type: systemVerilogSource
+  recoveryTest:
+    depend: [kara-partners:softlibs:softtest]
+    files:
+      - test/recovery.cpp
+    file_type: cppSource
+
+targets:
+  default: &default
+    filesets: [rtl]
+
+  sim:
+    <<: *default
+    filesets_append:
+      - testRtl
+      - recoveryTest
+    toplevel: recovery_tb
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options:
+        - --build-jobs 0
+        - -DSIM_DEBUG
+        - --savable
+        - --trace-fst
+        - --trace-structs
+        - -Wno-UNOPTFLAT

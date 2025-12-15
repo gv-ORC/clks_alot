@@ -1,51 +1,51 @@
 module rate_recovery (
-    input                      common_p::clk_dom_s sys_dom_i,
+    input                           common_p::clk_dom_s sys_dom_i,
 
-    input                                          recovery_en_i,
-    input                                          clear_state_i,
+    input                                               recovery_en_i,
+    input                                               clear_state_i,
 
 // Events
     // If 1: Only allow events from a single edge
     // If 0: Accept events from both Rising and Falling edges
-    input                                          event_polarity_en_i,
+    input                                               event_polarity_en_i,
     // If 1: Only accept Rising Edges
     // If 0: Only accept Falling Edges
-    input                                          event_polarity_i,
-    input          clks_alot_p::recovered_events_s io_events_i,
+    input                                               event_polarity_i,
+    input               clks_alot_p::recovered_events_s io_events_i,
 
 // Bandpass
-    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_upper_bound_i,
-    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_lower_bound_i,
-    output                                         bandpass_overshoot_o,
-    output                                         bandpass_undershoot_o,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_upper_bound_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] bandpass_lower_bound_i,
+    output                                              bandpass_overshoot_o,
+    output                                              bandpass_undershoot_o,
 
 // Drift
     // If 1: Only allow drift in 1 direction
     // If 0: Allow drift in both directions
-    input                                          drift_polarity_en_i,
+    input                                               drift_polarity_en_i,
     // If 1: Allow positive drift only
     // If 0: Allow negative drift only
-    input                                          drift_polarity_i,
-    input  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] drift_window_i,
-    output                                         positive_drift_violation_o,
-    output                                         negative_drift_violation_o,
+    input                                               drift_polarity_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] drift_window_i,
+    output                                              positive_drift_violation_o,
+    output                                              negative_drift_violation_o,
 
 // Halving
-    input                                          clock_encoded_data_en_i,
+    input                                               clock_encoded_data_en_i,
 
 // Priotization Configuration   
-    input                    [COUNT_BIT_WIDTH-1:0] growth_rate_i,
-    input                    [COUNT_BIT_WIDTH-1:0] decay_rate_i,
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] growth_rate_i,
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] decay_rate_i,
     // `saturation_limit_i` needs to be at least 1 growth rate below the max allowed by `clks_alot_p::PRIORITIZE_COUNTER_WIDTH`
-    input                    [COUNT_BIT_WIDTH-1:0] saturation_limit_i,
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] saturation_limit_i,
     // `plateau_limit_i` needs to be at greater-than or equal-to `decay_rate_i`
-    input                    [COUNT_BIT_WIDTH-1:0] plateau_limit_i,
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] plateau_limit_i,
 
 // Result
-    output         clks_alot_p::recovered_events_s io_events_o, // Apply any required delay here.
-    output                                         locked_in_o,
-    output                                         speed_change_detected_o,
-    output [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] rate_o
+    output              clks_alot_p::recovered_events_s io_events_o, // Apply any required delay here.
+    output                                              locked_in_o,
+    output                                              speed_change_detected_o,
+    output      [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] rate_o
 );
 
 /*
@@ -99,8 +99,8 @@ Until the priorizer has locked-in... every bandpass approved event is treated as
 
     wire b_is_prioritized;
     binary_value_prioritizer #(
-        VALUE_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH),
-        COUNT_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
+        VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
+        COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
     ) rate_prioritizer (
         .sys_dom_i         (sys_dom_i),
         .clear_state_i     (clear_state_i),

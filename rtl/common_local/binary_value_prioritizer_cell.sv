@@ -49,6 +49,7 @@ binary_value_prioritizer_cell #(
     wire   clear_en = (~matches_our_cell_o && ~we_have_priority_i)
                    || clear_state_i;
 
+    // ToDo: Optimize away this module, its only 3 lines aded to a counter
     decaying_saturation_counter #(
         .COUNT_BIT_WIDTH(COUNT_BIT_WIDTH)
     ) counter (

@@ -1,4 +1,4 @@
-module sir_clks_alot (
+module top (
     // input  common_p::clk_dom_s sys_dom_i, //! Use the init/config handshake
 
 
@@ -14,4 +14,4 @@ module sir_clks_alot (
 
 // 
 
-endmodule : sir_clks_alot
+endmodule : top

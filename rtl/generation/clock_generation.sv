@@ -10,6 +10,8 @@ module clock_generation (
     input                     common_p::clk_dom_s sys_dom_i,
 
     input                                         generation_en_i,
+    input                                         init_i,
+    input                                         starting_polarity_i,
     input                                         clear_state_i,
 
     input [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] total_anticipation_i,
@@ -134,10 +136,27 @@ module clock_generation (
     assign unpausable_clk_state_o.status.locked = rising_delta_locked && falling_delta_locked;
 
 // Delta Error
-    assign delta_mismatch_violation_o = ((calculated_delta != anticipated_rising_delta) && recovered_events_i.rising_edgeqq)
+    assign delta_mismatch_violation_o = ((calculated_delta != anticipated_rising_delta) && recovered_events_i.rising_edge)
                                      || ((calculated_delta != anticipated_falling_delta) && recovered_events_i.falling_edge);
 
 // Clock DFF
+    wire half_target_reached = target == counter_current_i;
+    wire quarter_target_reached = target == counter_current_i;
+
+    reg  clock_current;
+    wire clock_next = (init_i || sync_rst || clear_state_i)
+                    ? starting_polarity_i
+                    : ~clock_current;
+    wire clock_trigger = sync_rst
+                      || (clk_en && init_i)
+                      || (clk_en && sync_rst)
+                      || (clk_en && clear_state_i)
+                      || (clk_en && generation_en_i && target_reached);
+    always_ff @(posedge clk) begin
+        if (clock_trigger) begin
+            clock_current <= clock_next;
+        end
+    end
 
 // Pause Control (Only mutes pausable output.... Pause needs to start in the Preemptive, then goes into the expected... so they can stop on the same edge)
 

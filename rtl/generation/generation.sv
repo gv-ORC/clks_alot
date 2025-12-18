@@ -1,10 +1,14 @@
 module generation (
-    input                          common_p::clk_dom_s sys_dom_i,
+    input                           common_p::clk_dom_s sys_dom_i,
 
-    input                                              generation_en_i,
-    input                                              init_i,
-    input                                              starting_polarity_i,
-    input                                              clear_state_i,
+    input                                               generation_en_i,
+    input                                               init_i,
+    input                                               starting_polarity_i,
+    input                                               clear_state_i,
+
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] rx_cycle_delay_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] tx_cycle_delay_i,
+
 
 // Recovery Feedback
     input               clks_alot_p::recovered_events_s recovered_events_i,
@@ -43,53 +47,71 @@ module generation (
     // output                                        pause_stop_violation_o
 );
 
-clock_generation expected_clock_generation (
-    .sys_dom_i                              (sys_dom_i),
-    .generation_en_i                        (generation_en_i),
-    .init_i                                 (init_i),
-    .starting_polarity_i                    (starting_polarity_i),
-    .clear_state_i                          (clear_state_i),
-    .total_anticipation_i                   (),
-    .counter_current_i                      (),
-    .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
-    .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
-    .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
-    .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
-    .delta_mismatch_violation_o             (expected_delta_mismatch_violation_o),
-    .recovered_events_i                     (recovered_events_i),
-    .fully_locked_in_i                      (fully_locked_in_i),
-    .high_rate_i                            (high_rate_i),
-    .low_rate_i                             (low_rate_i),
-    .full_rate_i                            (full_rate_i),
-    .unpausable_clk_state_o                 (unpausable_expected_clk_state_o),
-    .pause_en_i                             (pause_en_i),
-    .pause_polarity_i                       (pause_polarity_i),
-    .pausable_clk_state_o                   (pausable_expected_clk_state_o)
-);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] null_seed = clks_alot_p::RATE_COUNTER_WIDTH'(0);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] plus_one = clks_alot_p::RATE_COUNTER_WIDTH'(1);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] cycle_count;
+    counter #(
+        .BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
+    ) counter (
+        .sys_dom_i    (sys_dom_i),
+        .counter_en_i (generation_en_i),
+        .init_en_i    (1'b0),
+        .decay_en_i   (1'b0),
+        .seed_i       (null_seed),
+        .growth_rate_i(plus_one),
+        .decay_rate_i (null_seed),
+        .clear_en_i   (clear_state_i),
+        .count_o      (cycle_count)
+    );
 
-clock_generation preemptive_clock_generation (
-    .sys_dom_i                              (sys_dom_i),
-    .generation_en_i                        (generation_en_i),
-    .init_i                                 (init_i),
-    .starting_polarity_i                    (starting_polarity_i),
-    .clear_state_i                          (clear_state_i),
-    .total_anticipation_i                   (),
-    .counter_current_i                      (),
-    .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
-    .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
-    .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
-    .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
-    .delta_mismatch_violation_o             (preemptive_delta_mismatch_violation_o),
-    .recovered_events_i                     (recovered_events_i),
-    .fully_locked_in_i                      (fully_locked_in_i),
-    .high_rate_i                            (high_rate_i),
-    .low_rate_i                             (low_rate_i),
-    .full_rate_i                            (full_rate_i),
-    .unpausable_clk_state_o                 (unpausable_preemptive_clk_state_o),
-    .pause_en_i                             (pause_en_i),
-    .pause_polarity_i                       (pause_polarity_i),
-    .pausable_clk_state_o                   (pausable_preemptive_clk_state_o)
-);
+    clock_generation expected_clock_generation (
+        .sys_dom_i                              (sys_dom_i),
+        .generation_en_i                        (generation_en_i),
+        .init_i                                 (init_i),
+        .starting_polarity_i                    (starting_polarity_i),
+        .clear_state_i                          (clear_state_i),
+        .total_anticipation_i                   (rx_cycle_delay_i),
+        .counter_current_i                      (cycle_count),
+        .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
+        .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
+        .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
+        .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
+        .delta_mismatch_violation_o             (expected_delta_mismatch_violation_o),
+        .recovered_events_i                     (recovered_events_i),
+        .fully_locked_in_i                      (fully_locked_in_i),
+        .high_rate_i                            (high_rate_i),
+        .low_rate_i                             (low_rate_i),
+        .full_rate_i                            (full_rate_i),
+        .unpausable_clk_state_o                 (unpausable_expected_clk_state_o),
+        .pause_en_i                             (pause_en_i),
+        .pause_polarity_i                       (pause_polarity_i),
+        .pausable_clk_state_o                   (pausable_expected_clk_state_o)
+    );
+
+    wire [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] preemptive_clock_anticipation = rx_cycle_delay_i + tx_cycle_delay_i;
+    clock_generation preemptive_clock_generation (
+        .sys_dom_i                              (sys_dom_i),
+        .generation_en_i                        (generation_en_i),
+        .init_i                                 (init_i),
+        .starting_polarity_i                    (starting_polarity_i),
+        .clear_state_i                          (clear_state_i),
+        .total_anticipation_i                   (preemptive_clock_anticipation),
+        .counter_current_i                      (cycle_count),
+        .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
+        .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
+        .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
+        .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
+        .delta_mismatch_violation_o             (preemptive_delta_mismatch_violation_o),
+        .recovered_events_i                     (recovered_events_i),
+        .fully_locked_in_i                      (fully_locked_in_i),
+        .high_rate_i                            (high_rate_i),
+        .low_rate_i                             (low_rate_i),
+        .full_rate_i                            (full_rate_i),
+        .unpausable_clk_state_o                 (unpausable_preemptive_clk_state_o),
+        .pause_en_i                             (pause_en_i),
+        .pause_polarity_i                       (pause_polarity_i),
+        .pausable_clk_state_o                   (pausable_preemptive_clk_state_o)
+    );
 
 /*
 Enable the free-running counter any time `generation_en_i` is high.

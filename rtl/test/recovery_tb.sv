@@ -1,5 +1,5 @@
-`include "hs_macro.sv"
-module kloch_random_test_tb (
+// `include "hs_macro.sv"
+module recovery_tb (
     input clk,
     input clk_en,
     input sync_rst,
@@ -159,5 +159,5 @@ module kloch_random_test_tb (
 //! End Module Tested ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~//
 //                                                                   //
 
-endmodule : kloch_random_test_tb
+endmodule : recovery_tb
 

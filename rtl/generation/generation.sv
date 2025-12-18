@@ -1,31 +1,94 @@
 module generation (
-    input                     common_p::clk_dom_s sys_dom_i,
+    input                          common_p::clk_dom_s sys_dom_i,
 
-    input                                         generation_en_i,
-    input                                         clear_state_i,
+    input                                              generation_en_i,
+    input                                              init_i,
+    input                                              starting_polarity_i,
+    input                                              clear_state_i,
 
 // Recovery Feedback
-    input         clks_alot_p::recovered_events_s recovered_events_i,
-    input                                         fully_locked_in_i,
-    input [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] high_rate_i,
-    input [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] low_rate_i,
+    input               clks_alot_p::recovered_events_s recovered_events_i,
+    input                                               fully_locked_in_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] high_rate_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] low_rate_i,
+    input       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] full_rate_i,
+
+// Delta Priotization Configuration & Control
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] delta_prioritization_growth_rate_i,
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] delta_prioritization_decay_rate_i,
+    // `saturation_limit_i` needs to be at least 1 growth rate below the max allowed by `clks_alot_p::PRIORITIZE_COUNTER_WIDTH`
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] delta_prioritization_saturation_limit_i,
+    // `plateau_limit_i` needs to be at greater-than or equal-to `decay_rate_i`
+    input [(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)-1:0] delta_prioritization_plateau_limit_i,
+
+    output                                              expected_delta_mismatch_violation_o,
+    output                                              preemptive_delta_mismatch_violation_o,
 
 // Violations
 
 // Unpausable Output
-    output             clks_alot_p::clock_state_s unpausable_expected_clk_state_o,
-    output             clks_alot_p::clock_state_s unpausable_preemptive_clk_state_o,
+    output                   clks_alot_p::clock_state_s unpausable_expected_clk_state_o,
+    output                   clks_alot_p::clock_state_s unpausable_preemptive_clk_state_o,
 
 // Pause Control & Output
     // Pauses maintain clock phasing when enabling and disabling
     // Pauses enable & disable when clock polarity matches
-    input                                         pause_en_i,
-    input                                         pause_polarity_i,
+    input                                               pause_en_i,
+    input                                               pause_polarity_i,
 
-    output             clks_alot_p::clock_state_s pausable_expected_clk_state_o,
-    output             clks_alot_p::clock_state_s pausable_preemptive_clk_state_o,
-    output                                        pause_start_violation_o,
-    output                                        pause_stop_violation_o
+    output                   clks_alot_p::clock_state_s pausable_expected_clk_state_o,
+    output                   clks_alot_p::clock_state_s pausable_preemptive_clk_state_o
+    //TODO: add these violations --- These can be done after initial testing, since I need to see some waveforms before I can see how the pause is naturally going to cascade
+    // output                                        pause_start_violation_o,
+    // output                                        pause_stop_violation_o
+);
+
+clock_generation expected_clock_generation (
+    .sys_dom_i                              (sys_dom_i),
+    .generation_en_i                        (generation_en_i),
+    .init_i                                 (init_i),
+    .starting_polarity_i                    (starting_polarity_i),
+    .clear_state_i                          (clear_state_i),
+    .total_anticipation_i                   (),
+    .counter_current_i                      (),
+    .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
+    .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
+    .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
+    .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
+    .delta_mismatch_violation_o             (expected_delta_mismatch_violation_o),
+    .recovered_events_i                     (recovered_events_i),
+    .fully_locked_in_i                      (fully_locked_in_i),
+    .high_rate_i                            (high_rate_i),
+    .low_rate_i                             (low_rate_i),
+    .full_rate_i                            (full_rate_i),
+    .unpausable_clk_state_o                 (unpausable_expected_clk_state_o),
+    .pause_en_i                             (pause_en_i),
+    .pause_polarity_i                       (pause_polarity_i),
+    .pausable_clk_state_o                   (pausable_expected_clk_state_o)
+);
+
+clock_generation preemptive_clock_generation (
+    .sys_dom_i                              (sys_dom_i),
+    .generation_en_i                        (generation_en_i),
+    .init_i                                 (init_i),
+    .starting_polarity_i                    (starting_polarity_i),
+    .clear_state_i                          (clear_state_i),
+    .total_anticipation_i                   (),
+    .counter_current_i                      (),
+    .delta_prioritization_growth_rate_i     (delta_prioritization_growth_rate_i),
+    .delta_prioritization_decay_rate_i      (delta_prioritization_decay_rate_i),
+    .delta_prioritization_saturation_limit_i(delta_prioritization_saturation_limit_i),
+    .delta_prioritization_plateau_limit_i   (delta_prioritization_plateau_limit_i),
+    .delta_mismatch_violation_o             (preemptive_delta_mismatch_violation_o),
+    .recovered_events_i                     (recovered_events_i),
+    .fully_locked_in_i                      (fully_locked_in_i),
+    .high_rate_i                            (high_rate_i),
+    .low_rate_i                             (low_rate_i),
+    .full_rate_i                            (full_rate_i),
+    .unpausable_clk_state_o                 (unpausable_preemptive_clk_state_o),
+    .pause_en_i                             (pause_en_i),
+    .pause_polarity_i                       (pause_polarity_i),
+    .pausable_clk_state_o                   (pausable_preemptive_clk_state_o)
 );
 
 /*
@@ -154,13 +217,5 @@ cond[1] = hl >= r
 
 ! Only accept deltas on events where NO drift is detected... if any drift is detected during lockin, then the "run and find out" approach will break and the system will need to be resync'd
 */
-
-clock_generation expected_clock_generation (
-
-);
-
-clock_generation preemptive_clock_generation (
-
-);
 
 endmodule : generation

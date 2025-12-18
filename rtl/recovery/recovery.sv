@@ -76,7 +76,8 @@ module recovery (
     output       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] high_rate_o,
     output                                               low_locked_in_o,
     output                                               low_rate_changed_o,
-    output logic [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] low_rate_o
+    output logic [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] low_rate_o,
+    output       [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] full_rate_o
 );
 
     clks_alot_p::recovered_events_s recovered_events;
@@ -148,6 +149,10 @@ module recovery (
             default: low_rate_o = clks_alot_p::RATE_COUNTER_WIDTH'(0);
         endcase
     end
+
+    assign full_rate_o = clock_encoded_data_en_i
+                       ? recovered_high_rate
+                       : (recovered_low_rate + recovered_high_rate);
 
     rate_recovery low_rate_recovery (
         .sys_dom_i                 (sys_dom_i),

@@ -56,6 +56,31 @@ module top (
     );
 
 // Generation
+    generation generation (
+        .sys_dom_i                              (),
+        .generation_en_i                        (),
+        .init_i                                 (),
+        .starting_polarity_i                    (),
+        .clear_state_i                          (),
+        .recovered_events_i                     (),
+        .fully_locked_in_i                      (),
+        .high_rate_i                            (),
+        .low_rate_i                             (),
+        .full_rate_i                            (),
+        .delta_prioritization_growth_rate_i     (),
+        .delta_prioritization_decay_rate_i      (),
+        .delta_prioritization_saturation_limit_i(),
+        .delta_prioritization_plateau_limit_i   (),
+        .expected_delta_mismatch_violation_o    (),
+        .preemptive_delta_mismatch_violation_o  (),
+        .unpausable_expected_clk_state_o        (),
+        .unpausable_preemptive_clk_state_o      (),
+        .pause_en_i                             (),
+        .pause_polarity_i                       (),
+        .pausable_expected_clk_state_o          (),
+        .pausable_preemptive_clk_state_o        ()
+    );
+
 
 // Violation Control
 

@@ -1,5 +1,5 @@
 CAPI=2:
-name: "gv-ORC:sir_clks_alot:main"
+name: "gv-ORC:clks_alot:clks_alot:0.1"
 description: "Sir Clks Alot and its supporting modules/cores"
 
 filesets:
@@ -15,7 +15,7 @@ filesets:
       - common_global/decaying_saturation_counter.sv
       - common_global/flip_flop.sv
       - common_global/monostable_full.sv
-      - common_global/synchronization.sv
+      - common_global/synchronization_chain.sv
       - common_local/binary_value_prioritizer_cell.sv
       - common_local/binary_value_prioritizer.sv
       - generation/clock_generation.sv

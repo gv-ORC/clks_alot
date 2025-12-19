@@ -122,7 +122,25 @@
       "inputs": {
         "flake-parts": "flake-parts",
         "fusesoc-flake": "fusesoc-flake",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "softlibs": "softlibs"
+      }
+    },
+    "softlibs": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1765542840,
+        "narHash": "sha256-rfotygKusZ6uprhO/3X58daAh2y7hPeVopQvKG1GKSY=",
+        "owner": "kara-partners",
+        "repo": "softlibs",
+        "rev": "fb4e622c4ab8f83355c70400038ccbc156293335",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kara-partners",
+        "ref": "0.1",
+        "repo": "softlibs",
+        "type": "github"
       }
     }
   },

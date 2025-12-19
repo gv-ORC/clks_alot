@@ -1,5 +1,5 @@
 CAPI=2:
-name: "gv-ORC:sir_clks_alot:refactor_6"
+name: "gv-ORC:sir_clks_alot:main"
 description: "Sir Clks Alot and its supporting modules/cores"
 
 filesets:
@@ -8,41 +8,72 @@ filesets:
 #    depend:
 #      - processor_academy:common:0.1.0
     files:
-      # - clks_alot_p.sv
-      # - top.sv
+      - clks_alot_p.sv
+      - top.sv
       - common_global/common_p.sv
       - common_global/counter.sv
+      - common_global/decaying_saturation_counter.sv
+      - common_global/flip_flop.sv
       - common_global/monostable_full.sv
-      - common_local/decaying_saturation_counter.sv # ToDo: Optimized away
+      - common_global/synchronization.sv
       - common_local/binary_value_prioritizer_cell.sv
       - common_local/binary_value_prioritizer.sv
-      - recovery/recovery_lockin_and_filtering.sv
-      - recovery/rate_recovery.sv
-      - recovery/event_selection.sv
+      - generation/clock_generation.sv
+      - generation/event_generation.sv
+      - generation/generation.sv
+      - generation/pausable_clock.sv
+      - generation/pause_control.sv
+      - generation/rate_tracking.sv
+      - recovery/drift_violation_tracking.sv
       - recovery/event_recovery.sv
+      - recovery/event_selection.sv
+      - recovery/rate_recovery.sv
+      - recovery/recovery_lockin_and_filtering.sv
       - recovery/recovery.sv
     file_type: systemVerilogSource
   testRtl:
     files:
       - test/test_clk.sv
       - test/recovery_tb.sv
+      - test/top_tb.sv
     file_type: systemVerilogSource
   recoveryTest:
     depend: [kara-partners:softlibs:softtest]
     files:
       - test/recovery.cpp
     file_type: cppSource
+  topTest:
+    depend: [kara-partners:softlibs:softtest]
+    files:
+      - test/top.cpp
+    file_type: cppSource
 
 targets:
   default: &default
     filesets: [rtl]
 
-  sim:
+  sim_recovery:
     <<: *default
     filesets_append:
       - testRtl
       - recoveryTest
     toplevel: recovery_tb
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options:
+        - --build-jobs 0
+        - -DSIM_DEBUG
+        - --savable
+        - --trace-fst
+        - --trace-structs
+        - -Wno-UNOPTFLAT
+  sim_top:
+    <<: *default
+    filesets_append:
+      - testRtl
+      - topTest
+    toplevel: top_tb.sv
     flow: sim
     flow_options:
       tool: verilator

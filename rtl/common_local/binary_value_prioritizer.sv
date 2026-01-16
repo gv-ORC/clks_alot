@@ -1,4 +1,4 @@
-binary_value_prioritizer #(
+module binary_value_prioritizer #(
     parameter VALUE_BIT_WIDTH = 8,
     parameter COUNT_BIT_WIDTH = 8
 )(
@@ -18,6 +18,11 @@ binary_value_prioritizer #(
     output                       b_is_prioritized_o, // If 0, a is prioritized (state only valid when `locked_in_o` is high)
     output [VALUE_BIT_WIDTH-1:0] data_o
 );
+
+// Clock Configuration
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
 // Saturation Comparison
     wire [COUNT_BIT_WIDTH-1:0] saturation_count_a;

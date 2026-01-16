@@ -16,7 +16,12 @@ module pause_control (
 /*
 Allow `pause_en_i` to stay high without reacting, until the clock polarity matches `pause_polarity_i`
 */
+// Clock Configuration
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
+// Pause Control
     reg  pause_active_current;
     wire pause_active_next = ~sync_rst && pause_en_i;
     wire pause_active_trigger = sync_rst
@@ -51,6 +56,6 @@ Allow `pause_en_i` to stay high without reacting, until the clock polarity match
                                 : io_clk_i;
     assign pausable_clock_o.status.pause_active = pause_active_current;
     assign pausable_clock_o.status.pause_duration = pause_duration_current;
-    assign pausable_clock_o.status..locked = io_clk_locked_i;
+    assign pausable_clock_o.status.locked = io_clk_locked_i;
 
 endmodule : pause_control

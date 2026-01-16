@@ -66,23 +66,23 @@ module clock_generation (
         .counter_current_i     (counter_current_i),
         .half_rate_target_o    (half_rate_target),
         .active_half_rate_o    (active_half_rate),
-        .inactive_half_rate_o  (inactive_half_rate),
+        .inactive_half_rate_o  (inactive_half_rate)
     );
 
 // Delta Generation
     wire   [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] doubled_full_rate = {full_rate_i[(clks_alot_p::RATE_COUNTER_WIDTH)-2:0], 1'b0};
-    wire   [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] full_and_a_half_rate = full_rate_i + active_half_rate_current;
+    wire   [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] full_and_a_half_rate = full_rate_i + active_half_rate;
 
     logic  [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] calculated_delta;
     wire                                     [1:0] calculated_delta_condition;
-    assign                                         calculated_delta_condition[0] = (total_anticipation_i >= inactive_half_rate_current)
+    assign                                         calculated_delta_condition[0] = (total_anticipation_i >= inactive_half_rate)
                                                                                 || (total_anticipation_i >= full_and_a_half_rate);
     assign                                         calculated_delta_condition[1] = (total_anticipation_i >= full_rate_i)
                                                                                 || (total_anticipation_i >= full_and_a_half_rate);
 
     always_comb begin : calculated_delta_mux
         case (calculated_delta_condition)
-            2'b00  : calculated_delta = inactive_half_rate_current - total_anticipation_i; // Total Anticipation Less-Than or Equal-To Inactive Half-Rate
+            2'b00  : calculated_delta = inactive_half_rate - total_anticipation_i; // Total Anticipation Less-Than or Equal-To Inactive Half-Rate
             2'b01  : calculated_delta = full_rate_i - total_anticipation_i;                // Total Anticipation Greater-Than Inactive Half-Rate
             2'b10  : calculated_delta = full_and_a_half_rate - total_anticipation_i;       // Total Anticipation Greater-Than Full-Rate
             2'b11  : calculated_delta = doubled_full_rate - total_anticipation_i;          // Total Anticipation Greater-Than (Full-Rate + Active Half-Rate)
@@ -97,8 +97,8 @@ module clock_generation (
     wire                                         rising_delta_locked;
     wire                                         rising_b_is_prioritized; // ToDo: Is this needed?
     binary_value_prioritizer #(
-        VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
-        COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
+        .VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
+        .COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
     ) rising_delta_prioritizer (
         .sys_dom_i         (sys_dom_i),
         .clear_state_i     (clear_state_i),
@@ -109,7 +109,7 @@ module clock_generation (
         .we_i              (rising_delta_we),
         .data_i            (actual_delta),
         .locked_in_o       (rising_delta_locked),
-        .b_is_prioritized_o(b_is_prioritized),
+        .b_is_prioritized_o(rising_b_is_prioritized),
         .data_o            (anticipated_rising_delta)
     );
 
@@ -117,8 +117,8 @@ module clock_generation (
     wire                                         falling_delta_locked;
     wire                                         falling_b_is_prioritized; // ToDo: Is this needed?
     binary_value_prioritizer #(
-        VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
-        COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
+        .VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
+        .COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
     ) falling_delta_prioritizer (
         .sys_dom_i         (sys_dom_i),
         .clear_state_i     (clear_state_i),
@@ -129,7 +129,7 @@ module clock_generation (
         .we_i              (falling_delta_we),
         .data_i            (actual_delta),
         .locked_in_o       (falling_delta_locked),
-        .b_is_prioritized_o(b_is_prioritized),
+        .b_is_prioritized_o(falling_b_is_prioritized),
         .data_o            (anticipated_falling_delta)
     );
 

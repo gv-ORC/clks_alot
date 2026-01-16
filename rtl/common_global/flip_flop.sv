@@ -1,5 +1,5 @@
 module flip_flop (
-    input  common_p::clk_dom_s clk_dom_s_i,
+    input  common_p::clk_dom_s clk_dom_i,
 
     // Control Priority:
     // 1. Clear
@@ -13,9 +13,9 @@ module flip_flop (
 );
 
 // Clock Configuration
-    wire clk = clk_dom_s_i.clk;
-    wire clk_en = clk_dom_s_i.clk_en;
-    wire sync_rst = clk_dom_s_i.sync_rst;
+    wire clk = clk_dom_i.clk;
+    wire clk_en = clk_dom_i.clk_en;
+    wire sync_rst = clk_dom_i.sync_rst;
 
 // Flip-Flop State
     reg  state_current;

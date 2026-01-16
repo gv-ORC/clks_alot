@@ -42,7 +42,7 @@ module recovery_lockin_and_filtering (
     assign       polarity_filter_condition[0] = event_polarity_en_i && event_polarity_i;
     assign       polarity_filter_condition[1] = event_polarity_en_i;
     always_comb begin : polarity_filter_mux
-        case (primary_event_o_condition)
+        case (polarity_filter_condition)
             2'b00  : polarity_filtered_event = io_events_i.any_valid_edge; // Either Edge
             2'b01  : polarity_filtered_event = io_events_i.any_valid_edge; // Either Edge
             2'b10  : polarity_filtered_event = io_events_i.falling_edge;   // Falling Edge Only
@@ -52,8 +52,8 @@ module recovery_lockin_and_filtering (
     end
 
 // Bandpass Filtering
-    assign bandpass_overshoot_o = pending_rate > bandpass_upper_bound_i;
-    assign bandpass_undershoot_o = pending_rate < bandpass_lower_bound_i;
+    assign bandpass_overshoot_o = pending_rate_i > bandpass_upper_bound_i;
+    assign bandpass_undershoot_o = pending_rate_i < bandpass_lower_bound_i;
 
     wire   badpass_fail = bandpass_overshoot_o || bandpass_undershoot_o;
 

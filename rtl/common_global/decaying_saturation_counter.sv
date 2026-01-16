@@ -1,7 +1,7 @@
 module decaying_saturation_counter #(
     parameter BIT_WIDTH = 8
 )(
-    input  common_p::clk_dom_s sys_dom_i,
+    input  common_p::clk_dom_s clk_dom_i,
     
     input                      counter_en_i,
     input                      decay_en_i,
@@ -35,7 +35,7 @@ module decaying_saturation_counter #(
     counter #(
         .BIT_WIDTH(BIT_WIDTH)
     ) counter (
-        .sys_dom_i    (sys_dom_i),
+        .clk_dom_i    (clk_dom_i),
         .counter_en_i (counter_en),
         .init_en_i    (1'b0),
         .decay_en_i   (decay_en),

@@ -16,7 +16,7 @@ module recovery (
     // 0: io_clk_i.neg used
     // 1: io_clk_i.pos used
     input                                                source_select_i,
-    input                            clks_alot_p::mode_e recovery_mode_i,
+    input                      clks_alot_p::input_mode_s recovery_mode_i,
 
     input                   clks_alot_p::recovery_pins_s io_clk_i,
 
@@ -120,7 +120,7 @@ module recovery (
         .growth_rate_i             (prioritization_growth_rate_i),
         .decay_rate_i              (prioritization_decay_rate_i),
         .saturation_limit_i        (prioritization_saturation_limit_i),
-        .plateau_limit_i           (half_rate_plateau_limit_i),
+        .plateau_limit_i           (prioritization_plateau_limit_i),
         .io_events_o               (recovered_events_o),
         .locked_in_o               (high_locked_in_o),
         .speed_change_detected_o   (high_rate_changed_o),
@@ -128,14 +128,14 @@ module recovery (
     );
 
 // Low Rate
-    wire low_rate_recovery_en = recovery_en && ~clock_encoded_data_en_i;
+    wire low_rate_recovery_en = recovery_en_i && ~clock_encoded_data_en_i;
     wire recovered_low_locked_in;
     wire recovered_low_rate;
 
-    assign fully_locked_in_o = (recoverd_low_locked_in || ~clock_encoded_data_en_i) && high_locked_in_o;
+    assign fully_locked_in_o = (recovered_low_locked_in || ~clock_encoded_data_en_i) && high_locked_in_o;
     assign low_locked_in_o = clock_encoded_data_en_i
                            ? high_locked_in_o
-                           : recoverd_low_locked_in;
+                           : recovered_low_locked_in;
 
     wire   [1:0] low_rate_condition;
     assign       low_rate_condition[0] = clock_encoded_data_en_i && ~rounding_polarity_i;
@@ -144,7 +144,7 @@ module recovery (
         case (low_rate_condition)
             2'b00  : low_rate_o = recovered_low_rate; // Normal Operation
             2'b01  : low_rate_o = recovered_low_rate; // Normal Operation
-            2'b10  : low_rate_o = rounded_down_rate;  // Clock Encoded Data - Rouding Down
+            2'b10  : low_rate_o = rounded_rate;       // Clock Encoded Data - Rouding Down
             2'b11  : low_rate_o = halved_rate;        // Clock Encoded Data - Rouding Down
             default: low_rate_o = clks_alot_p::RATE_COUNTER_WIDTH'(0);
         endcase
@@ -174,7 +174,7 @@ module recovery (
         .growth_rate_i             (prioritization_growth_rate_i),
         .decay_rate_i              (prioritization_decay_rate_i),
         .saturation_limit_i        (prioritization_saturation_limit_i),
-        .plateau_limit_i           (half_rate_plateau_limit_i),
+        .plateau_limit_i           (prioritization_plateau_limit_i),
         .io_events_o               (), // Not Used: Only needed from 1 of these modules
         .locked_in_o               (recovered_low_locked_in),
         .speed_change_detected_o   (low_rate_changed_o),
@@ -184,7 +184,7 @@ module recovery (
 // Excessive Drift
     drift_violation_tracking drift_violation_tracking (
         .sys_dom_i                      (sys_dom_i),
-        .recovery_en_i                  (recovery_en),
+        .recovery_en_i                  (recovery_en_i),
         .clear_state_i                  (clear_state_i),
         .growth_rate_i                  (violation_growth_rate_i),
         .decay_rate_i                   (violation_decay_rate_i),

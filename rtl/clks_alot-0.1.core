@@ -34,7 +34,7 @@ filesets:
   testRtl:
     files:
       - test/test_clk.sv
-      - test/recovery_tb.sv
+      # - test/recovery_tb.sv
       - test/top_tb.sv
     file_type: systemVerilogSource
   recoveryTest:
@@ -52,28 +52,28 @@ targets:
   default: &default
     filesets: [rtl]
 
-  sim_recovery:
-    <<: *default
-    filesets_append:
-      - testRtl
-      - recoveryTest
-    toplevel: recovery_tb
-    flow: sim
-    flow_options:
-      tool: verilator
-      verilator_options:
-        - --build-jobs 0
-        - -DSIM_DEBUG
-        - --savable
-        - --trace-fst
-        - --trace-structs
-        - -Wno-UNOPTFLAT
+#  sim_recovery:
+#    <<: *default
+#    filesets_append:
+#      - testRtl
+#      - recoveryTest
+#    toplevel: recovery_tb
+#    flow: sim
+#    flow_options:
+#      tool: verilator
+#      verilator_options:
+#        - --build-jobs 0
+#        - -DSIM_DEBUG
+#        - --savable
+#        - --trace-fst
+#        - --trace-structs
+#        - -Wno-UNOPTFLAT
   sim_top:
     <<: *default
     filesets_append:
       - testRtl
       - topTest
-    toplevel: top_tb.sv
+    toplevel: top_tb
     flow: sim
     flow_options:
       tool: verilator

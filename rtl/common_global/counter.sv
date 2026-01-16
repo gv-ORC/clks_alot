@@ -1,7 +1,7 @@
 module counter #(
     parameter BIT_WIDTH = 8
 )(
-    input  common_p::clk_dom_s sys_dom_i,
+    input  common_p::clk_dom_s clk_dom_i,
     
     input                      init_en_i,
     input                      clear_en_i,
@@ -16,6 +16,12 @@ module counter #(
     output     [BIT_WIDTH-1:0] count_o
 );
 
+// Clock Configuration
+    wire clk = clk_dom_i.clk;
+    wire clk_en = clk_dom_i.clk_en;
+    wire sync_rst = clk_dom_i.sync_rst;
+
+// Counter
     reg    [BIT_WIDTH-1:0] count_current;
     logic  [BIT_WIDTH-1:0] count_next;
     wire             [1:0] count_next_condition;

@@ -116,7 +116,7 @@ module top (
         .violation_decay_rate_i              (violation_decay_rate),
         .violation_saturation_limit_i        (violation_saturation_limit),
         .violation_trigger_limit_i           (violation_trigger_limit),
-        .recovered_clk                       (recovered_clk),
+        .recovered_clk_o                     (recovered_clk),
         .recovered_events_o                  (recovered_events),
         .fully_locked_in_o                   (fully_locked_in),
         .high_locked_in_o                    (high_locked_in),
@@ -129,6 +129,8 @@ module top (
     );
 
 // Generation
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] rx_cycle_delay = clks_alot_p::RATE_COUNTER_WIDTH'(3);
+    wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] tx_cycle_delay = clks_alot_p::RATE_COUNTER_WIDTH'(3);
 
     wire final_high_rate = generation_en
                          ? generation_high_rate_o
@@ -152,6 +154,8 @@ module top (
         .init_i                                 (init_i),
         .starting_polarity_i                    (starting_polarity_i),
         .clear_state_i                          (clear_state_i),
+        .rx_cycle_delay_i                       (rx_cycle_delay),
+        .tx_cycle_delay_i                       (tx_cycle_delay),
         .recovered_events_i                     (recovered_events),
         .fully_locked_in_i                      (fully_locked_in),
         .high_rate_i                            (final_high_rate),

@@ -30,9 +30,9 @@ module drift_violation_tracking (
     wire [(clks_alot_p::VIOLATION_COUNTER_WIDTH)-1:0] null_plateau_limit = clks_alot_p::VIOLATION_COUNTER_WIDTH'(0);
 
     decaying_saturation_counter #(
-        .COUNT_BIT_WIDTH(clks_alot_p::VIOLATION_COUNTER_WIDTH)
+        .BIT_WIDTH(clks_alot_p::VIOLATION_COUNTER_WIDTH)
     ) counter (
-        .sys_dom_i         (sys_dom_i),
+        .clk_dom_i         (sys_dom_i),
         .counter_en_i      (event_check),
         .decay_en_i        (~drift_detected),
         .clear_en_i        (clear_state_i),

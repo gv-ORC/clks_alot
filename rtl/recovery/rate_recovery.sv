@@ -63,9 +63,9 @@ Until the priorizer has locked-in... every bandpass approved event is treated as
 
     wire [(clks_alot_p::RATE_COUNTER_WIDTH)-1:0] pending_rate;
     counter #(
-        BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
+        .BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
     ) rate_counter (
-        .sys_dom_i    (sys_dom_i),
+        .clk_dom_i    (sys_dom_i),
         .counter_en_i (recovery_en_i),
         .init_en_i    (clear_state_i),
         .decay_en_i   (1'b1),
@@ -99,8 +99,8 @@ Until the priorizer has locked-in... every bandpass approved event is treated as
 
     wire b_is_prioritized;
     binary_value_prioritizer #(
-        VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
-        COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
+        .VALUE_BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH),
+        .COUNT_BIT_WIDTH(clks_alot_p::PRIORITIZE_COUNTER_WIDTH)
     ) rate_prioritizer (
         .sys_dom_i         (sys_dom_i),
         .clear_state_i     (clear_state_i),
@@ -119,7 +119,7 @@ Until the priorizer has locked-in... every bandpass approved event is treated as
     monostable_full #(
         .BUFFERED(1'b1)
     ) speed_change_monostable (
-        .clk_dom_s_i    (sys_dom_i),
+        .clk_dom_i    (sys_dom_i),
         .monostable_en_i(speed_change_check_en),
         .sense_i        (b_is_prioritized),
         .prev_o         (), // Not Used

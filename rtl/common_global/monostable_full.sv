@@ -9,22 +9,22 @@
 module monostable_full #(
     parameter bit BUFFERED = 1'b0
 )(
-    input  sys_structs::clk_dom_sain clk_dom_s_i,
+    input  common_p::clk_dom_s clk_dom_i,
 
-    input                          monostable_en_i,
+    input                      monostable_en_i,
 
-    input                          sense_i,
+    input                      sense_i,
     
-    output                         prev_o,
-    output                         posedge_mono_o,
-    output                         negedge_mono_o,
-    output                         bothedge_mono_o
+    output                     prev_o,
+    output                     posedge_mono_o,
+    output                     negedge_mono_o,
+    output                     bothedge_mono_o
 );
 
 // Clock Configuration
-    wire clk = clk_dom_s_i.clk;
-    wire clk_en = clk_dom_s_i.clk_en;
-    wire sync_rst = clk_dom_s_i.sync_rst;
+    wire clk = clk_dom_i.clk;
+    wire clk_en = clk_dom_i.clk_en;
+    wire sync_rst = clk_dom_i.sync_rst;
 
 // Previous State    
     reg  sense_prev_current;

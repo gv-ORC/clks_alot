@@ -6,7 +6,6 @@ module pausable_clock (
     input                                         starting_polarity_i,
     input                                         locked_i,
 
-    input                                         quarter_toggle_event_i,
     input                                         half_toggle_event_i,
 
     output             clks_alot_p::clock_state_s unpausable_clock_o,
@@ -41,8 +40,9 @@ module pausable_clock (
         .sys_dom_i             (sys_dom_i),
         .clock_active_i        (generation_en_i),
         .io_clk_i              (clock_current),
-        .half_rate_elapsed_i   (quarter_toggle_event_i),
-        .quarter_rate_elapsed_i(half_toggle_event_i),
+        .half_rate_elapsed_i   (half_toggle_event_i),
+        // Quarter rates are not supported at this time.
+        .quarter_rate_elapsed_i(1'b0),
         .clk_events_o          (unpausable_clock_o.events)
     );
     assign unpausable_clock_o.clk = clock_current;
@@ -56,7 +56,7 @@ module pausable_clock (
         .generation_en_i (generation_en_i),
         .clk_events_i    (unpausable_clock_o.events),
         .io_clk_i        (unpausable_clock_o.clk),
-        .io_clk_locked_i (unpausable_clock_o.status.locked)
+        .io_clk_locked_i (unpausable_clock_o.status.locked),
         .pause_en_i      (pause_en_i),
         .pause_polarity_i(pause_polarity_i),
         .pausable_clock_o(pausable_clock_o)

@@ -1,4 +1,4 @@
-binary_value_prioritizer_cell #(
+module binary_value_prioritizer_cell #(
     parameter VALUE_BIT_WIDTH = 8,
     parameter COUNT_BIT_WIDTH = 8
 )(
@@ -20,6 +20,11 @@ binary_value_prioritizer_cell #(
     output                       count_plateaued_o,
     output [COUNT_BIT_WIDTH-1:0] saturation_count_o
 );
+
+// Clock Configuration
+    wire clk = sys_dom_i.clk;
+    wire clk_en = sys_dom_i.clk_en;
+    wire sync_rst = sys_dom_i.sync_rst;
 
 // Value Buffer
     reg  [VALUE_BIT_WIDTH-1:0] value_current;
@@ -44,9 +49,9 @@ binary_value_prioritizer_cell #(
                    || clear_state_i;
 
     decaying_saturation_counter #(
-        .COUNT_BIT_WIDTH(COUNT_BIT_WIDTH)
+        .BIT_WIDTH(COUNT_BIT_WIDTH)
     ) decaying_saturation_counter (
-        .sys_dom_i         (sys_dom_i),
+        .clk_dom_i         (sys_dom_i),
         .counter_en_i      (we_i),
         .decay_en_i        (value_mismatch),
         .clear_en_i        (clear_en),

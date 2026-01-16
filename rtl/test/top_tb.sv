@@ -32,7 +32,7 @@ module top_tb (
 //                                                                   //
 //! Start Supporting Logic ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ //	
 
-    common_p::clk_dom_s                           sys_dom_i;
+    common_p::clk_dom_s                          sys_dom_i;
     assign sys_dom_i.clk = clk;
     assign sys_dom_i.clk_en = clk_en;
     assign sys_dom_i.sync_rst = sync_rst;
@@ -112,9 +112,9 @@ module top_tb (
         .clear_state_i                        (clear_state_i),
         .init_i                               (init_i),
         .starting_polarity_i                  (starting_polarity_i),
-        .generation_high_rate_o               (generation_high_rate_o),
-        .generation_low_rate_o                (generation_low_rate_o),
-        .generation_full_rate_o               (generation_full_rate_o),
+        .generation_high_rate_i               (generation_high_rate_i),
+        .generation_low_rate_i                (generation_low_rate_i),
+        .generation_full_rate_i               (generation_full_rate_i),
         .source_select_i                      (source_select_i),
         .recovery_mode_i                      (recovery_mode_i),
         .io_clk_i                             (io_clk_i),

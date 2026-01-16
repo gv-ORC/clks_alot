@@ -9,7 +9,7 @@ module event_recovery (
     // 0: io_clk_i.neg used
     // 1: io_clk_i.pos used
     input                                  source_select_i,
-    input              clks_alot_p::mode_e recovery_mode_i,
+    input        clks_alot_p::input_mode_s recovery_mode_i,
     
     input     clks_alot_p::recovery_pins_s io_clk_i,
 
@@ -32,7 +32,7 @@ module event_recovery (
     monostable_full #(
         .BUFFERED(1'b0)
     ) primary_edge_detection (
-        .clk_dom_i    (sys_dom_i),
+        .clk_dom_i      (sys_dom_i),
         .monostable_en_i(recovery_en_i),
         .sense_i        (recovery_drivers.primary),
         .prev_o         (), // Not Used
@@ -57,7 +57,7 @@ module event_recovery (
         .sys_dom_i         (sys_dom_i),
         .recovery_en_i     (recovery_en_i),
         .recovery_mode_i   (recovery_mode_i),
-        .io_clk_i          (io_clk_i)
+        .io_clk_i          (io_clk_i),
         .driver_events_i   (driver_events),
         .recovered_events_o(recovered_events_o)
     );

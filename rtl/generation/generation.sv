@@ -53,7 +53,7 @@ module generation (
     counter #(
         .BIT_WIDTH(clks_alot_p::RATE_COUNTER_WIDTH)
     ) counter (
-        .sys_dom_i    (sys_dom_i),
+        .clk_dom_i    (sys_dom_i),
         .counter_en_i (generation_en_i),
         .init_en_i    (1'b0),
         .decay_en_i   (1'b0),
